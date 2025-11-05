@@ -5,14 +5,14 @@ const app = express();
 const port = 3000;
 const host = 'localhost';
 
-// --- Statische Dateien aus web-ui bereitstellen ---
+// providing static files from the web UI
 app.use(express.static(path.join(__dirname, '../web-ui')));
 
-// --- Routen einbinden ---
+// integrate routes
 const pagesRouter = require('./routes/pages');
 app.use('/', pagesRouter);
 
-// --- Server starten ---
+// start server
 app.listen(port, host, () => {
   console.log(`Server läuft auf http://${host}:${port}`);
 });
