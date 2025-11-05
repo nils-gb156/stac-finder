@@ -27,7 +27,7 @@
 - The application is accessible at: [http://localhost:4000](http://localhost:4000)
 - pgAdmin (Database Management) is accessible at: [http://localhost:5050](http://localhost:5050)
   - Login: `admin@admin.com` / `admin`
-  - See [Database Access Guide](docs/database-access.md) for setup instructions
+  - See [Database Access Guide](docs/database/database-access.md) for setup instructions
 - Development mode with hot-reload is enabled by default in Docker
 
 **Services included:**
@@ -58,4 +58,4 @@
 
 **Additional notes:**
 - The application is accessible at: [http://localhost:3000](http://localhost:3000)
-- **Note:** This mode requires a separate PostgreSQL database. See [Database Access Guide](docs/database-access.md) for configuration
+- **Note:** This mode requires a separate PostgreSQL database. See [Database Access Guide](docs/database/database-access.md) for configuration
