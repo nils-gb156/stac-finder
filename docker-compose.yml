@@ -1,0 +1,12 @@
+services:
+  api:
+    container_name: STACFinder
+    build: .
+    ports:
+      - "4000:3000"
+    environment:
+      - NODE_ENV=development
+    volumes:
+      - ./api:/app/api
+      - ./web-ui:/app/web-ui
+    command: npm run dev # use npm start for production
