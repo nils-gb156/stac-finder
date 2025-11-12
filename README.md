@@ -21,10 +21,19 @@
   ```bash
   docker-compose down
   ```
+5. **Database access:** See [Database Access Guide](docs/database-access.md) for details on connecting to PostgreSQL
 
 **Additional notes:**
 - The application is accessible at: [http://localhost:4000](http://localhost:4000)
+- pgAdmin (Database Management) is accessible at: [http://localhost:5050](http://localhost:5050)
+  - Login: `admin@admin.com` / `admin`
+  - See [Database Access Guide](docs/database/database-access.md) for setup instructions
 - Development mode with hot-reload is enabled by default in Docker
+
+**Services included:**
+- **API Server** - Port 4000
+- **PostgreSQL + PostGIS** - Port 5433 (external), stores spatial STAC data
+- **pgAdmin** - Port 5050 (web interface for database management)
 
 ### Option 2: Node.js (without Docker)
 
@@ -49,3 +58,4 @@
 
 **Additional notes:**
 - The application is accessible at: [http://localhost:3000](http://localhost:3000)
+- **Note:** This mode requires a separate PostgreSQL database. See [Database Access Guide](docs/database/database-access.md) for configuration
