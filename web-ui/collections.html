@@ -13,7 +13,11 @@
 
     <!-- interface between stac-api and web-ui -->
     <script>
-        fetch('/collections?f=json')
+        // Get current URL parameters (including filter)
+        const urlParams = new URLSearchParams(window.location.search);
+        urlParams.set('f', 'json'); // Ensure JSON format
+        
+        fetch('/collections?' + urlParams.toString())
             .then(r => r.json())
             .then(data => {
                 const list = document.getElementById('collections');
