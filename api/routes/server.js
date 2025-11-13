@@ -4,14 +4,21 @@ const app = express();
 const port = 3000;
 const host = '0.0.0.0';
 
-// providing static files from the web UI
+// Middleware
+app.use(express.json());
+
+// Static files from Web UI
 app.use(express.static(path.join(__dirname, '../web-ui')));
 
-// integrate routes
+// Web UI pages
 const pagesRouter = require('./pages');
 app.use('/', pagesRouter);
 
-// start server
+// API routes
+const collectionsRouter = require('./collections');
+app.use('/collections', collectionsRouter);
+
+// Start server
 app.listen(port, host, () => {
   console.log(`Server läuft auf http://${host}:${port}`);
 });
