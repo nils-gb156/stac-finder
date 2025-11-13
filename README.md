@@ -1,6 +1,13 @@
 # STACFinder
 
+A STAC-compliant API for browsing and searching SpatioTemporal Asset Catalogs stored in PostgreSQL/PostGIS.
+
 ## Features
+
+- **STAC API Collections Endpoint**: Browse all STAC collections
+- **Content Negotiation**: Returns HTML for browsers, JSON for API clients
+- **PostgreSQL/PostGIS**: Spatial database for STAC metadata
+- **Docker Setup**: Easy deployment with Docker Compose
 
 ## Installation & Start
 
@@ -37,10 +44,23 @@
 
 ## API Endpoints
 
-### Collections
+### GET `/collections`
 
-#### GET `/collections`
-Returns all STAC collections from the database.
+Returns all STAC collections from the database. Supports content negotiation via Accept header and query parameters.
 
-**Try it:**
-- [http://localhost:4000/collections](http://localhost:4000/collections)
+**Parameters:**
+- `f` (optional): Output format
+  - `json` - JSON response (default for API clients)
+  - `html` - HTML page (default for browsers)
+
+**Examples:**
+```bash
+# Browser (HTML)
+http://localhost:4000/collections
+
+# JSON for API clients
+http://localhost:4000/collections?f=json
+
+# HTML explicitly
+http://localhost:4000/collections?f=html
+```
