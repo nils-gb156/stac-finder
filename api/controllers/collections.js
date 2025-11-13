@@ -24,11 +24,6 @@ const getCollections = async (req, res) => {
                     rel: 'self',
                     href: `/collections/${row.id}`,
                     type: 'application/json'
-                },
-                {
-                    rel: 'items',
-                    href: `/collections/${row.id}/items`,
-                    type: 'application/geo+json'
                 }
             ]
         }));
