@@ -8,7 +8,7 @@ const host = '0.0.0.0';
 app.use(express.json());
 
 // Static files from Web UI
-app.use(express.static(path.join(__dirname, '../web-ui')));
+app.use(express.static(path.join(__dirname, '../../web-ui')));
 
 // Web UI pages
 const pagesRouter = require('./pages');
