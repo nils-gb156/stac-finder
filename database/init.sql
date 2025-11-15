@@ -9,18 +9,15 @@ CREATE EXTENSION IF NOT EXISTS postgis_topology;
 CREATE SCHEMA IF NOT EXISTS stac;
 
 -- Create tables
-
--- Note: The table design is preliminary. Crawlers or migration scripts may extend or modify the schema later, 
--- therefore integrations should be robust to the existence of additional fields.
+--Note: integrations should be robust to the existence of additional fields.
 
 -- Sources table: basic registry of where collections come from
 CREATE TABLE IF NOT EXISTS stac.sources (
     id serial PRIMARY KEY,
-    title varchar(255) NOT NULL,
+    title text,
     url text,
     type varchar(100),
-    metadata jsonb,
-    created_at timestamptz DEFAULT now()
+    last_crawled_timestamp timestamptz DEFAULT now() --when was the last time the source got crawled (successfully)?
 );
 
 -- Collections table: stores extracted/normalised collection metadata for efficient querying
@@ -28,16 +25,18 @@ CREATE TABLE IF NOT EXISTS stac.collections (
     id serial PRIMARY KEY,
     title text,
     description text,
-    source_id integer REFERENCES stac.sources(id) ON DELETE SET NULL,
-    bbox double precision[],
-    spatial_extent geometry(Polygon, 4326),
-    temporal_start timestamptz,
-    temporal_end timestamptz,
-    keywords text[],
-    provider_names text[],
+    source_id integer REFERENCES stac.sources(id) ON DELETE SET NULL, --id that refers to the source of the collection
+    spatial_extent geometry(Polygon, 4326), 
+    temporal_extent timestamptz[temporal_start, temporal_end], --date of the oldest and newest data
+    keywords text[], --keywords that describe the data
+    providers text[],
     license text,
-    dois text[],
-    created_at timestamptz DEFAULT now()
+    doi text[], --Digital Object Identifier of the collection
+    platform_summary text[], --for satellite data: summary of the platforms of the data
+    constellation_summary text[], --for satellite data: summary of constellations of the satellites (if there are any)
+    gsd_summary text[], --for satellite data: summary of the ground sampling distance of the data
+    processing_level_summary text[], --for sattelite data: summary of the processing level of the data
+    last_crawled_timestamp timestamptz DEFAULT now() --when was the last time this collection got crawled (successfully)?
 );
 
 -- optional: table for crawl_logs
