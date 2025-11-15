@@ -1,10 +1,17 @@
 # STACFinder
 
+A STAC-compliant API for browsing and searching SpatioTemporal Asset Catalogs stored in PostgreSQL/PostGIS.
+
 ## Features
+
+- **STAC API Collections Endpoint**: Browse all STAC collections
+- **Content Negotiation**: Returns HTML for browsers, JSON for API clients
+- **PostgreSQL/PostGIS**: Spatial database for STAC metadata
+- **Docker Setup**: Easy deployment with Docker Compose
 
 ## Installation & Start
 
-### Option 1: Docker (recommended)
+### Docker
 
 1. Clone or download the repository.
 2. Make sure [Docker](https://www.docker.com/) is installed.
@@ -35,27 +42,25 @@
 - **PostgreSQL + PostGIS** - Port 5433 (external), stores spatial STAC data
 - **pgAdmin** - Port 5050 (web interface for database management)
 
-### Option 2: Node.js (without Docker)
+## API Endpoints
 
-1. Clone or download the repository.
-2. Navigate to the `api` directory:
-  ```bash
-  cd api
-  ```
-3. Install dependencies:
-  ```bash
-  npm install
-  ```
-4. Start the application:
-  - **Production mode:**
-    ```bash
-    npm start
-    ```
-  - **Development mode (with hot-reload):**
-    ```bash
-    npm run dev
-    ```
+### GET `/collections`
 
-**Additional notes:**
-- The application is accessible at: [http://localhost:3000](http://localhost:3000)
-- **Note:** This mode requires a separate PostgreSQL database. See [Database Access Guide](docs/database/database-access.md) for configuration
+Returns all STAC collections from the database. Supports content negotiation via Accept header and query parameters.
+
+**Parameters:**
+- `f` (optional): Output format
+  - `json` - JSON response (default for API clients)
+  - `html` - HTML page (default for browsers)
+
+**Examples:**
+```bash
+# Browser (HTML)
+http://localhost:4000/collections
+
+# JSON for API clients
+http://localhost:4000/collections?f=json
+
+# HTML explicitly
+http://localhost:4000/collections?f=html
+```

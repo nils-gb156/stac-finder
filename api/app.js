@@ -1,14 +1,10 @@
 const express = require('express');
-const path = require('path');
-const pagesRouter = require('./routes/pages');
-
 const app = express();
+const routes = require('./routes');
 
-app.use(express.static(path.join(__dirname, 'public')));
 app.use('/', pagesRouter);
 
-app.use((req, res, next) => {
-  res.status(404).send('Seite nicht gefunden');
-});
+app.use(express.json());
+app.use('/collections', routes.collections);
 
 module.exports = app;
