@@ -18,6 +18,10 @@ app.use('/', pagesRouter);
 const collectionsRouter = require('./collections');
 app.use('/collections', collectionsRouter);
 
+const queryablesRouter = require('./queryables');
+app.use('/collections/queryables', queryablesRouter);
+
+
 // Start server
 app.listen(port, host, () => {
   console.log(`Server läuft auf http://${host}:${port}`);
