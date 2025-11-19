@@ -86,8 +86,10 @@ const getQueryables = async (req, res) => {
             });
         }
 
-        
        
+        if(format === 'html' || (!format && acceptHeader.includes('text/html'))) {
+        return res.sendFile(path.join(__dirname, '../../web-ui/queryables.html'));
+        }
         res.json(queryables);
     } catch (err) {
         console.error('Error fetching queryables: ', err);
