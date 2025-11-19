@@ -13,11 +13,14 @@ crawler/
 │  ├─ api_client.js            # Holt JSON über API
 │  └─ db_writer.js             # Schreiben in SQL-Datenbank
 │
+├─ entry_crawler/
+│  ├─ crawler_engine.js        # crawlt die URLs / gibt JSONs an den parser weiter
+│  ├─ crawler_functions.js     
+│  └─ source_manager.js        # Verwaltung der URLs/Queue
+│
 ├─ parsing/
 │  ├─ parser.js                #parst JSONs, übergibt daten an db_writer und links an den crawler
 │  └─ parser_functions.js       
-│
-├─ entry.html
 │
 ├─ scheduler.js                # Startet parsen der STAC-Index-JSON
 │
