@@ -5,19 +5,21 @@
 crawler/
 │
 ├─ crawling/
-│  ├─ crawler_engine        # crawlt die URLs / gibt JSONs an den parser weiter
-│  ├─ crawler_functions     
-│  └─ source_manager        # Verwaltung der URLs/Queue
+│  ├─ crawler_engine.js        # crawlt die URLs / gibt JSONs an den parser weiter
+│  ├─ crawler_functions.js     
+│  └─ source_manager.js        # Verwaltung der URLs/Queue
 │
 ├─ data_management/
-│  ├─ api_client            # Holt JSON über API
-│  └─ db_writer             # Schreiben in SQL-Datenbank
+│  ├─ api_client.js            # Holt JSON über API
+│  └─ db_writer.js             # Schreiben in SQL-Datenbank
 │
 ├─ parsing/
-│  ├─ parser                #parst JSONs, übergibt daten an db_writer und links an den crawler
-│  └─ parser_functions       
+│  ├─ parser.js                #parst JSONs, übergibt daten an db_writer und links an den crawler
+│  └─ parser_functions.js       
 │
-├─ scheduler                # Startet parsen der STAC-Index-JSON
+├─ entry.html
+│
+├─ scheduler.js                # Startet parsen der STAC-Index-JSON
 │
 ├─ tests/
 │
