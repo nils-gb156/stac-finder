@@ -25,10 +25,10 @@ CREATE TABLE IF NOT EXISTS stac.collections (
     id serial PRIMARY KEY,
     title text,
     description text,
-    source_id integer REFERENCES stac.sources(id) ON DELETE SET NULL, --id that refers to the source of the collection
-    spatial_extent geometry(Polygon, 4326), 
-    temporal_extent timestamptz[temporal_start, temporal_end], --date of the oldest and newest data
     keywords text[], --keywords that describe the data
+    spatial_extent geometry(Polygon, 4326), 
+    temporal_start timestamptz,
+    temporal_end timestamptz,
     providers text[],
     license text,
     doi text[], --Digital Object Identifier of the collection
@@ -36,6 +36,7 @@ CREATE TABLE IF NOT EXISTS stac.collections (
     constellation_summary text[], --for satellite data: summary of constellations of the satellites (if there are any)
     gsd_summary text[], --for satellite data: summary of the ground sampling distance of the data
     processing_level_summary text[], --for sattelite data: summary of the processing level of the data
+    source_id integer REFERENCES stac.sources(id) ON DELETE SET NULL, --id that refers to the source of the collection
     last_crawled_timestamp timestamptz DEFAULT now() --when was the last time this collection got crawled (successfully)?
 );
 
