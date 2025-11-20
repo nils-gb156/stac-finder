@@ -46,21 +46,27 @@ A STAC-compliant API for browsing and searching SpatioTemporal Asset Catalogs st
 
 ### GET `/collections`
 
-Returns all STAC collections from the database. Supports content negotiation via Accept header and query parameters.
+Returns all STAC collections from the database as JSON. Supports CQL2 filtering for advanced queries.
 
 **Parameters:**
-- `f` (optional): Output format
-  - `json` - JSON response (default for API clients)
-  - `html` - HTML page (default for browsers)
+- `filter` (optional): CQL2 filter expression for filtering collections
+  - Supports attribute, temporal, and spatial filters
+  - Follows the [CQL2 specification](https://docs.ogc.org/DRAFTS/21-065.html)
 
 **Examples:**
 ```bash
-# Browser (HTML)
+# All collections
 http://localhost:4000/collections
 
-# JSON for API clients
-http://localhost:4000/collections?f=json
+# Simple filter by ID
+http://localhost:4000/collections?filter=id=2
 
-# HTML explicitly
-http://localhost:4000/collections?f=html
+# Temporal filter
+http://localhost:4000/collections?filter=temporal_start>='2023-01-01T00:00:00Z'
+
+# Spatial filter (PostGIS)
+http://localhost:4000/collections?filter=intersects(spatial_extent,POLYGON((0 0,10 0,10 10,0 10,0 0)))
+
+# Combined filters with AND/OR
+http://localhost:4000/collections?filter=id=2 AND temporal_start>='2023-01-01'
 ```
