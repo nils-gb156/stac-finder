@@ -1,9 +1,35 @@
 const db = require('../db');
 const path = require('path');
+const { parseCQL2 } = require('cql2-sql-translator');
 
 const getCollections = async (req, res) => {
     try {
-        const result = await db.query('SELECT * FROM stac.collections ORDER BY title');
+        // Base query
+        let query = 'SELECT * FROM stac.collections';
+        let values = [];
+
+        // Handle filter parameter
+        const filterParam = req.query.filter;
+        if (filterParam) {
+            try {
+                // Parse CQL2 filter - returns { sql, values } directly
+                const sqlResult = parseCQL2(filterParam);
+                query += ` ${sqlResult.sql}`;
+                values = sqlResult.values;
+            } catch (filterError) {
+                console.error('Filter error:', filterError);
+                return res.status(400).json({
+                    error: 'Invalid filter parameter',
+                    message: filterError.message
+                });
+            }
+        }
+
+        // Add ORDER BY
+        query += ' ORDER BY title';
+
+        // Execute query
+        const result = await db.query(query, values);
 
         const collections = result.rows.map((row) => ({
             id: row.id.toString(),
