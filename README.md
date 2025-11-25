@@ -11,11 +11,39 @@ A STAC-compliant API for browsing and searching SpatioTemporal Asset Catalogs st
 
 ## Installation & Start
 
-### Docker
+### Prerequisites
 
 1. Clone or download the repository.
 2. Make sure [Docker](https://www.docker.com/) is installed.
-3. Start the application in the project directory:
+3. **Configure environment variables:**
+   
+   The project requires two separate `.env` files with database credentials:
+   
+   **API Service**:
+   
+   Create `/api/.env` and set the API user credentials (read-only access):
+   ```
+   DB_HOST=finder.stacindex.org
+   DB_PORT=5432
+   DB_USER=stacapi
+   DB_PASS=(enter known password)
+   DB_NAME=stacfinder
+   ```
+   
+   **Crawler Service**:
+
+   Create `crawler/.env` and set the crawler user credentials (read/write access):
+   ```
+   DB_HOST=finder.stacindex.org
+   DB_PORT=5432
+   DB_USER=crawler
+   DB_PASS=(enter known password)
+   DB_NAME=stacfinder
+   ```
+
+### Docker
+
+Start the application in the project directory:
   - **First start (build container):**
     ```bash
     docker-compose up --build
