@@ -32,7 +32,7 @@ A STAC-compliant API for browsing and searching SpatioTemporal Asset Catalogs st
    
    **Crawler Service**:
 
-   Create `crawler/.env` and set the crawler user credentials (read/write access):
+   Create `/crawler/.env` and set the crawler user credentials (read/write access):
    ```
    DB_HOST=finder.stacindex.org
    DB_PORT=5432
