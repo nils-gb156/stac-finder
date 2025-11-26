@@ -1,0 +1,54 @@
+[
+    {
+        "id":114,
+        "url":"https://digital-atlas.s3.amazonaws.com/stac/public_stac/catalog.json",
+        "slug":"africa-agriculture-adaptation-atlas",
+        "title":"African Agriculture Adaptation Atlas STAC catalog",
+        "summary":"This STAC contains the data used within the Africa Agriculture Adaptation Atlas project found [here](https://adaptationatlas.cgiar.org/). This includes data related to climate hazards, crop production, crop exposure to climate hazards, demographics and more across Sub-Saharan Africa.",
+        "access":"public",
+        "created":"2025-04-17T13:20:19.986Z",
+        "updated":"2025-04-17T13:20:19.986Z",
+        "isPrivate":false,
+        "isApi":false,
+        "accessInfo":null
+    },
+    {
+        "id":41,
+        "url":"https://landsatlook.usgs.gov/stac-server/",
+        "slug":"usgs-landsat-collection-2-api",
+        "title":"USGS Landsat Collection 2 API",
+        "summary":"USGS authoritative source for Landsat Collection 2 data",
+        "access":"public",
+        "created":"2021-10-29T06:24:42.967Z",
+        "updated":"2023-02-15T11:00:00.000Z",
+        "isPrivate":false,
+        "isApi":true,
+        "accessInfo":null
+    },
+    {
+        "id":31,
+        "url":"https://gws-access.jasmin.ac.uk/public/odanceo/S2_L2/collection.json",
+        "slug":"s2-for-ghana",
+        "title":"S2 for Ghana",
+        "summary":"Sentinel 2 Surface Reflectance over Ghana using SIAC AC.",
+        "access":"public",
+        "created":"2021-04-21T13:43:48.505Z",
+        "updated":"2021-04-21T13:43:48.505Z",
+        "isPrivate":false,
+        "isApi":false,
+        "accessInfo":null
+    },
+    {
+        "id":10,
+        "url":"https://openeo.vito.be/openeo/1.0/",
+        "slug":"vito-openeo",
+        "title":"VITO (openEO)",
+        "summary":"openEO API to the VITO Remote Sensing product catalog and processing services.",
+        "access":"protected",
+        "created":"2020-08-24T20:44:28.248Z",
+        "updated":"2023-02-15T11:00:00.000Z",
+        "isPrivate":true,
+        "isApi":true,
+        "accessInfo":"Contact [Jeroen Dries](https://remotesensing.vito.be/team/jeroen-dries) or [VITO Remote Sensing](https://remotesensing.vito.be/contact-us) for more information."
+    }
+]
