@@ -70,25 +70,8 @@ const getCollections = async (req, res) => {
                 }
             ]
         };
-
-        // Content Negotiation: Query Parameter + Accept Header
-        const format = req.query.f;
-        const acceptHeader = req.get('Accept') || '';
         
-        // Validate format-paramter (when given)
-        if (format && format !== 'json' && format !== 'html') {
-            return res.status(400).json({
-                error: 'Invalid format parameter',
-                message: 'Format must be either "json" or "html"'
-            });
-        }
-        
-        // Check explicit format parameters first, then Accept header
-        if (format === 'html' || (!format && acceptHeader.includes('text/html'))) {
-            return res.sendFile(path.join(__dirname, '../../web-ui/collections.html'));
-        }
-        
-        // Default: JSON for API-Clients
+        // return json
         res.json(data);
         
     } catch (err) {
