@@ -16,6 +16,24 @@ api/
 ├── package.json          # Dependencies and scripts
 ```
 
+## API Features
+
+### Collections Endpoint (`/collections`)
+
+The collections endpoint supports sorting with the following query parameters:
+
+- **`orderby`**: Sort by column name (allowed: `id`, `title`, `description`, `license`)
+- **`sortorder`**: Sort direction (`ASC` or `DESC`, default: `ASC`)
+
+**Examples:**
+```
+GET /collections?orderby=title
+GET /collections?orderby=title&sortorder=DESC
+GET /collections?orderby=id&sortorder=ASC
+```
+
+All query parameters are validated against whitelists to prevent SQL injection attacks.
+
 ## Development Guidelines
 
 - Each route is defined in `routes/` and linked to a controller in `controllers/`.
