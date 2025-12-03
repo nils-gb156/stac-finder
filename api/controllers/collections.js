@@ -46,6 +46,22 @@ const getCollections = async (req, res) => {
             }
         }
 
+        // Pagination
+        const limit = parseInt(req.query.limit) || 10;
+        const maxLimit = 10000;
+        
+        // Validate limit
+        if (isNaN(limit) || limit < 1) {
+            return res.status(400).json({
+                error: 'Invalid limit parameter',
+                message: 'limit must be a positive integer'
+            });
+        }
+        
+        // Cap limit at maximum
+        const effectiveLimit = Math.min(limit, maxLimit);
+        sql += ` LIMIT ${effectiveLimit}`;
+
         const result = await db.query(sql);
 
         const collections = result.rows.map((row) => ({
