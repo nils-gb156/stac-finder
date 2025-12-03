@@ -3,7 +3,50 @@ const path = require('path');
 
 const getCollections = async (req, res) => {
     try {
-        const result = await db.query('SELECT * FROM stac.collections ORDER BY title');
+        let sql = 'SELECT * FROM stac.collections';
+
+        // STAC-compliant sortby with +/- prefix syntax
+        const sortby = req.query.sortby;
+        
+        // Whitelist of allowed columns to prevent SQL injection
+        const allowedColumns = ['id', 'title', 'description', 'license'];
+
+        if (sortby) {
+            // Parse sortby parameter - comma-separated list with +/- prefix
+            // Format: +field or -field (+ is default if no prefix)
+            const sortFields = sortby.split(',').map(s => s.trim());
+            const orderByClauses = [];
+            
+            for (const sortField of sortFields) {
+                let field = sortField;
+                let direction = 'ASC';
+                
+                // Check for direction prefix
+                if (field.startsWith('+')) {
+                    field = field.substring(1);
+                    direction = 'ASC';
+                } else if (field.startsWith('-')) {
+                    field = field.substring(1);
+                    direction = 'DESC';
+                }
+                
+                // Validate field name
+                if (!allowedColumns.includes(field)) {
+                    return res.status(400).json({
+                        error: 'Invalid sortby parameter',
+                        message: `Field must be one of: ${allowedColumns.join(', ')}. Format: sortby=field, sortby=+field (ascending), or sortby=-field (descending)`
+                    });
+                }
+                
+                orderByClauses.push(`${field} ${direction}`);
+            }
+            
+            if (orderByClauses.length > 0) {
+                sql += ` ORDER BY ${orderByClauses.join(', ')}`;
+            }
+        }
+
+        const result = await db.query(sql);
 
         const collections = result.rows.map((row) => ({
             id: row.id.toString(),
@@ -39,25 +82,8 @@ const getCollections = async (req, res) => {
                 }
             ]
         };
-
-        // Content Negotiation: Query Parameter + Accept Header
-        const format = req.query.f;
-        const acceptHeader = req.get('Accept') || '';
         
-        // Validate format-paramter (when given)
-        if (format && format !== 'json' && format !== 'html') {
-            return res.status(400).json({
-                error: 'Invalid format parameter',
-                message: 'Format must be either "json" or "html"'
-            });
-        }
-        
-        // Check explicit format parameters first, then Accept header
-        if (format === 'html' || (!format && acceptHeader.includes('text/html'))) {
-            return res.sendFile(path.join(__dirname, '../../web-ui/collections.html'));
-        }
-        
-        // Default: JSON for API-Clients
+        // return json
         res.json(data);
         
     } catch (err) {
