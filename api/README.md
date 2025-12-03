@@ -16,6 +16,29 @@ api/
 ├── package.json          # Dependencies and scripts
 ```
 
+## API Features
+
+### Collections Endpoint (`/collections`)
+
+The collections endpoint supports STAC-compliant sorting with the `sortby` query parameter:
+
+- **`sortby`**: Sort by field with optional direction prefix (comma-separated for multiple fields)
+  - **Allowed fields**: `id`, `title`, `description`, `license`
+  - **Direction prefix**: `+` for ascending (default), `-` for descending
+  - **Format**: `field`, `+field`, or `-field`
+
+**Examples:**
+```
+GET /collections?sortby=title          # Sort by title ascending (default)
+GET /collections?sortby=+title         # Sort by title ascending (explicit)
+GET /collections?sortby=-title         # Sort by title descending
+GET /collections?sortby=+title,-id     # Sort by title ascending, then id descending
+```
+
+All query parameters are validated against whitelists to prevent SQL injection attacks.
+
+**STAC API Compliance**: This implements the [STAC API Sort Extension](https://github.com/stac-api-extensions/sort) for HTTP GET requests.
+
 ## Development Guidelines
 
 - Each route is defined in `routes/` and linked to a controller in `controllers/`.
