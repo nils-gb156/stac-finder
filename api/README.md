@@ -20,21 +20,24 @@ api/
 
 ### Collections Endpoint (`/collections`)
 
-The collections endpoint supports sorting with the `sortby` query parameter:
+The collections endpoint supports STAC-compliant sorting with the `sortby` query parameter:
 
-- **`sortby`**: Sort by field with optional direction (format: `field` or `field:direction`)
+- **`sortby`**: Sort by field with optional direction prefix (comma-separated for multiple fields)
   - **Allowed fields**: `id`, `title`, `description`, `license`
-  - **Allowed directions**: `asc` (default), `desc`
+  - **Direction prefix**: `+` for ascending (default), `-` for descending
+  - **Format**: `field`, `+field`, or `-field`
 
 **Examples:**
 ```
 GET /collections?sortby=title          # Sort by title ascending (default)
-GET /collections?sortby=title:asc      # Sort by title ascending (explicit)
-GET /collections?sortby=title:desc     # Sort by title descending
-GET /collections?sortby=id:asc         # Sort by id ascending
+GET /collections?sortby=+title         # Sort by title ascending (explicit)
+GET /collections?sortby=-title         # Sort by title descending
+GET /collections?sortby=+title,-id     # Sort by title ascending, then id descending
 ```
 
 All query parameters are validated against whitelists to prevent SQL injection attacks.
+
+**STAC API Compliance**: This implements the [STAC API Sort Extension](https://github.com/stac-api-extensions/sort) for HTTP GET requests.
 
 ## Development Guidelines
 
