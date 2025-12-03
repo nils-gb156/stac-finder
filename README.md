@@ -79,15 +79,17 @@ GET http://localhost:4000/collections
 
 Sort collections by title (ascending):
 ```
-GET http://localhost:4000/collections?orderby=title
+GET http://localhost:4000/collections?sortby=title
+GET http://localhost:4000/collections?sortby=title:asc
 ```
 
 Sort collections by title (descending):
 ```
-GET http://localhost:4000/collections?orderby=title&sortorder=DESC
+GET http://localhost:4000/collections?sortby=title:desc
 ```
 
-**Available sort columns:** `id`, `title`, `description`, `license`  
-**Sort orders:** `ASC` (default), `DESC`
+**Syntax:** `sortby=field` or `sortby=field:direction`  
+**Available fields:** `id`, `title`, `description`, `license`  
+**Directions:** `asc` (default), `desc`
 
 For more API details, see [API README](api/README.md).

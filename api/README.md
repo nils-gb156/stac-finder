@@ -20,16 +20,18 @@ api/
 
 ### Collections Endpoint (`/collections`)
 
-The collections endpoint supports sorting with the following query parameters:
+The collections endpoint supports sorting with the `sortby` query parameter:
 
-- **`orderby`**: Sort by column name (allowed: `id`, `title`, `description`, `license`)
-- **`sortorder`**: Sort direction (`ASC` or `DESC`, default: `ASC`)
+- **`sortby`**: Sort by field with optional direction (format: `field` or `field:direction`)
+  - **Allowed fields**: `id`, `title`, `description`, `license`
+  - **Allowed directions**: `asc` (default), `desc`
 
 **Examples:**
 ```
-GET /collections?orderby=title
-GET /collections?orderby=title&sortorder=DESC
-GET /collections?orderby=id&sortorder=ASC
+GET /collections?sortby=title          # Sort by title ascending (default)
+GET /collections?sortby=title:asc      # Sort by title ascending (explicit)
+GET /collections?sortby=title:desc     # Sort by title descending
+GET /collections?sortby=id:asc         # Sort by id ascending
 ```
 
 All query parameters are validated against whitelists to prevent SQL injection attacks.

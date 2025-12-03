@@ -5,33 +5,36 @@ const getCollections = async (req, res) => {
     try {
         let sql = 'SELECT * FROM stac.collections';
 
-        // Order by with validation
-        const orderby = req.query.orderby;
-        const sortorder = req.query.sortorder || 'ASC';
+        // STAC-compliant sortby with field:direction syntax
+        const sortby = req.query.sortby;
         
         // Whitelist of allowed columns to prevent SQL injection
         const allowedColumns = ['id', 'title', 'description', 'license'];
-        const allowedSortOrders = ['ASC', 'DESC'];
+        const allowedDirections = ['asc', 'desc'];
 
-        if (orderby) {
-            // Validate column name
-            if (!allowedColumns.includes(orderby)) {
+        if (sortby) {
+            // Parse sortby parameter (format: field:direction or just field)
+            const parts = sortby.split(':');
+            const field = parts[0];
+            const direction = (parts[1] || 'asc').toLowerCase();
+            
+            // Validate field name
+            if (!allowedColumns.includes(field)) {
                 return res.status(400).json({
-                    error: 'Invalid orderby parameter',
-                    message: `orderby must be one of: ${allowedColumns.join(', ')}`
+                    error: 'Invalid sortby parameter',
+                    message: `Field must be one of: ${allowedColumns.join(', ')}. Format: sortby=field or sortby=field:asc or sortby=field:desc`
                 });
             }
             
-            // Validate sort order
-            const sortOrderUpper = sortorder.toUpperCase();
-            if (!allowedSortOrders.includes(sortOrderUpper)) {
+            // Validate direction
+            if (!allowedDirections.includes(direction)) {
                 return res.status(400).json({
-                    error: 'Invalid sortorder parameter',
-                    message: 'sortorder must be either ASC or DESC'
+                    error: 'Invalid sortby direction',
+                    message: 'Direction must be either asc or desc. Format: sortby=field:asc or sortby=field:desc'
                 });
             }
             
-            sql += ` ORDER BY ${orderby} ${sortOrderUpper}`;
+            sql += ` ORDER BY ${field} ${direction.toUpperCase()}`;
         }
 
         const result = await db.query(sql);
