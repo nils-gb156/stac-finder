@@ -77,24 +77,20 @@ Get all collections:
 GET http://localhost:4000/collections
 ```
 
-Sort collections by title (ascending):
+Sort collections fields (ascending):
 ```
 GET http://localhost:4000/collections?sortby=title
-GET http://localhost:4000/collections?sortby=+title
-```
-
-Sort collections by title (descending):
-```
 GET http://localhost:4000/collections?sortby=-title
-```
-
-Sort by multiple fields:
-```
 GET http://localhost:4000/collections?sortby=+title,-id
 ```
 
-**STAC-compliant syntax:** `sortby=field` (default ascending), `sortby=+field` (ascending), `sortby=-field` (descending)  
+Pagination (limit results per page):
+```
+GET http://localhost:4000/collections?limit=20
+```
+
+**Sorting:** `sortby=field` (default ascending), `sortby=+field` (ascending), `sortby=-field` (descending)  
 **Available fields:** `id`, `title`, `description`, `license`  
-**Multiple fields:** Comma-separated, e.g., `sortby=+title,-id`
+**Pagination:** `limit` parameter (default: 10, max: 10000). Use `next`/`prev` links in response to navigate pages.
 
 For more API details, see [API README](api/README.md).

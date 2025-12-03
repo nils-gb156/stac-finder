@@ -1,6 +1,18 @@
 const db = require('../db');
 const path = require('path');
 
+// Helper function to build query string from params object
+const buildQueryString = (params) => {
+    const queryParams = new URLSearchParams();
+    for (const [key, value] of Object.entries(params)) {
+        if (value !== undefined && value !== null && value !== '') {
+            queryParams.append(key, value);
+        }
+    }
+    const queryString = queryParams.toString();
+    return queryString ? `?${queryString}` : '';
+};
+
 const getCollections = async (req, res) => {
     try {
         let sql = 'SELECT * FROM stac.collections';
@@ -49,6 +61,7 @@ const getCollections = async (req, res) => {
         // Pagination
         const limit = parseInt(req.query.limit) || 10;
         const maxLimit = 10000;
+        const token = req.query.token;
         
         // Validate limit
         if (isNaN(limit) || limit < 1) {
@@ -60,7 +73,26 @@ const getCollections = async (req, res) => {
         
         // Cap limit at maximum
         const effectiveLimit = Math.min(limit, maxLimit);
-        sql += ` LIMIT ${effectiveLimit}`;
+        
+        // Decode token to get offset
+        let offset = 0;
+        if (token) {
+            try {
+                const decoded = Buffer.from(token, 'base64').toString('utf-8');
+                const tokenData = JSON.parse(decoded);
+                offset = tokenData.offset || 0;
+            } catch (err) {
+                return res.status(400).json({
+                    error: 'Invalid token parameter',
+                    message: 'token is malformed or invalid'
+                });
+            }
+        }
+        
+        // Add LIMIT and OFFSET to query
+        sql += ` LIMIT ${effectiveLimit} OFFSET ${offset}`;
+        
+        console.log('SQL Query:', sql); // Debug log
 
         const result = await db.query(sql);
 
@@ -88,15 +120,42 @@ const getCollections = async (req, res) => {
             ]
         }));
 
+        // Build pagination links
+        const links = [
+            {
+                rel: 'self',
+                href: `/collections${buildQueryString(req.query)}`,
+                type: 'application/json'
+            }
+        ];
+        
+        // Add 'next' link if we got a full page of results
+        if (collections.length === effectiveLimit) {
+            const nextOffset = offset + effectiveLimit;
+            const nextToken = Buffer.from(JSON.stringify({ offset: nextOffset })).toString('base64');
+            const nextQuery = { ...req.query, token: nextToken, limit: effectiveLimit };
+            links.push({
+                rel: 'next',
+                href: `/collections${buildQueryString(nextQuery)}`,
+                type: 'application/json'
+            });
+        }
+        
+        // Add 'prev' link if we're not on the first page
+        if (offset > 0) {
+            const prevOffset = Math.max(0, offset - effectiveLimit);
+            const prevToken = Buffer.from(JSON.stringify({ offset: prevOffset })).toString('base64');
+            const prevQuery = { ...req.query, token: prevToken, limit: effectiveLimit };
+            links.push({
+                rel: 'prev',
+                href: `/collections${buildQueryString(prevQuery)}`,
+                type: 'application/json'
+            });
+        }
+
         const data = {
             collections,
-            links: [
-                {
-                    rel: 'self',
-                    href: '/collections',
-                    type: 'application/json'
-                }
-            ]
+            links
         };
         
         // return json

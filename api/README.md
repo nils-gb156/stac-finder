@@ -20,7 +20,9 @@ api/
 
 ### Collections Endpoint (`/collections`)
 
-The collections endpoint supports STAC-compliant sorting with the `sortby` query parameter:
+The collections endpoint supports STAC-compliant sorting and pagination.
+
+#### Sorting (`sortby`)
 
 - **`sortby`**: Sort by field with optional direction prefix (comma-separated for multiple fields)
   - **Allowed fields**: `id`, `title`, `description`, `license`
@@ -35,9 +37,45 @@ GET /collections?sortby=-title         # Sort by title descending
 GET /collections?sortby=+title,-id     # Sort by title ascending, then id descending
 ```
 
+#### Pagination (`limit` and `token`)
+
+- **`limit`**: Maximum number of collections to return per page
+  - **Default**: 10
+  - **Maximum**: 10000
+  - **Format**: Positive integer
+
+- **`token`**: Opaque pagination token for navigating between pages
+  - **Format**: Base64-encoded string (automatically generated)
+  - **Usage**: Use the `next` and `prev` links in the response to navigate
+
+**Examples:**
+```
+GET /collections?limit=20              # Get first 20 collections
+GET /collections?limit=20&token=xyz    # Get next/previous page using token from links
+```
+
+**Response includes pagination links:**
+```json
+{
+  "collections": [...],
+  "links": [
+    {
+      "rel": "self",
+      "href": "/collections?limit=20",
+      "type": "application/json"
+    },
+    {
+      "rel": "next",
+      "href": "/collections?limit=20&token=xyz",
+      "type": "application/json"
+    }
+  ]
+}
+```
+
 All query parameters are validated against whitelists to prevent SQL injection attacks.
 
-**STAC API Compliance**: This implements the [STAC API Sort Extension](https://github.com/stac-api-extensions/sort) for HTTP GET requests.
+**STAC API Compliance**: This implements the [STAC API Sort Extension](https://github.com/stac-api-extensions/sort) and follows OGC API - Features pagination patterns for HTTP GET requests.
 
 ## Development Guidelines
 
