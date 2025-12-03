@@ -13,14 +13,9 @@ crawler/
 │
 ├─ data_management/
 │  ├─ api_client.js            # Holt JSON über API
-│  └─ db_writer.js             # Schreiben in SQL-Datenbank
-│
-├─ entry_crawler/              # entry server       
+│  └─ db_writer.js             # Schreiben in SQL-Datenbank     
 │
 ├─ parsing/
-│  ├─ package-lock.json    
-│  ├─ package.json
-│  ├─ parser_controll_server
 │  ├─ parser.js                #parst JSONs, übergibt daten an db_writer und links an den crawler
 │  └─ parser_functions.js       
 │
