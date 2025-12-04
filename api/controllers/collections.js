@@ -4,7 +4,7 @@ const { parsePaginationParams, createPaginationLinks } = require('../utils/pagin
 
 const getCollections = async (req, res) => {
     try {
-        let sql = 'SELECT * FROM stac.collections';
+        let sql = 'SELECT id, title, description, keywords, license, temporal_start, temporal_end, providers, ST_AsGeoJSON(spatial_extent)::json as spatial_extent FROM stac.collections';
         
         // Whitelist of allowed columns to prevent SQL injection
         const allowedColumns = ['id', 'title', 'description', 'license'];
@@ -36,29 +36,48 @@ const getCollections = async (req, res) => {
 
         const result = await db.query(sql);
 
-        const collections = result.rows.map((row) => ({
-            id: row.id.toString(),
-            title: row.title,
-            description: row.description,
-            extend: {
-                spatial: {
-                    bbox: [row.bbox]
+        const collections = result.rows.map((row) => {
+            // Extract bbox from spatial_extent GeoJSON
+            let bbox = null;
+            if (row.spatial_extent && row.spatial_extent.coordinates) {
+                // For Polygon: coordinates[0] contains the outer ring
+                const coords = row.spatial_extent.coordinates[0];
+                if (coords && coords.length > 0) {
+                    const lons = coords.map(c => c[0]);
+                    const lats = coords.map(c => c[1]);
+                    bbox = [
+                        Math.min(...lons),
+                        Math.min(...lats),
+                        Math.max(...lons),
+                        Math.max(...lats)
+                    ];
+                }
+            }
+
+            return {
+                id: row.id.toString(),
+                title: row.title,
+                description: row.description,
+                extent: {
+                    spatial: {
+                        bbox: bbox ? [bbox] : []
+                    },
+                    temporal: {
+                        interval: [[row.temporal_start, row.temporal_end]]
+                    }
                 },
-                temporal: {
-                    interval: [[row.temporal_start, row.temporal_end]]
-                }
-            },
-            license: row.license,
-            keywords: row.keywords,
-            providers: row.provider_names?.map((name) => ({ name })),
-            links: [
-                {
-                    rel: 'self',
-                    href: `/collections/${row.id}`,
-                    type: 'application/json'
-                }
-            ]
-        }));
+                license: row.license,
+                keywords: row.keywords,
+                providers: row.providers?.map((name) => ({ name })),
+                links: [
+                    {
+                        rel: 'self',
+                        href: `/collections/${row.id}`,
+                        type: 'application/json'
+                    }
+                ]
+            };
+        });
 
         // Build pagination links
         const links = createPaginationLinks(
