@@ -6,20 +6,25 @@
  * @returns {Object} { limit: number, offset: number, error: Object|null }
  */
 const parsePaginationParams = (query, defaultLimit = 10, maxLimit = 10000) => {
-    const limit = parseInt(query.limit) || defaultLimit;
     const token = query.token;
-
-    // Validate limit
-    if (isNaN(limit) || limit < 1) {
-        return {
-            limit: defaultLimit,
-            offset: 0,
-            error: {
-                status: 400,
-                error: 'Invalid limit parameter',
-                message: 'limit must be a positive integer'
-            }
-        };
+    
+    // Parse limit - only use default if not provided at all
+    let limit = defaultLimit;
+    if (query.limit !== undefined) {
+        limit = parseInt(query.limit);
+        
+        // Validate limit only if it was provided
+        if (isNaN(limit) || limit < 1) {
+            return {
+                limit: defaultLimit,
+                offset: 0,
+                error: {
+                    status: 400,
+                    error: 'Invalid limit parameter',
+                    message: 'limit must be a positive integer'
+                }
+            };
+        }
     }
 
     // Cap limit at maximum
