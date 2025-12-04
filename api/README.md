@@ -11,6 +11,7 @@ api/
 ├── middleware/           # Logging, error handling, etc. 
 ├── db/                   # PostgreSQL connection and query helpers 
 ├── utils/                # Helper functions (e.g. CQL2 parser) 
+├── tests/                # Unit and integration tests
 ├── app.js                # Main Express app entry point 
 ├── .env                  # Environment variables 
 ├── package.json          # Dependencies and scripts
@@ -87,9 +88,39 @@ All query parameters are validated against whitelists to prevent SQL injection a
 
 ## Testing
 
-- Unit tests should be written for each controller.
-- Integration tests should validate DB interactions.
-- Use Postman or curl to manually test endpoints.
+The API includes comprehensive unit and integration tests using Jest and Supertest.
+
+### Running Tests
+
+```bash
+# Run all tests
+npm test
+
+# Run tests in watch mode
+npm run test:watch
+
+# Run tests with coverage
+npm run test:coverage
+```
+
+### Test Structure
+
+```
+api/tests/
+├── unit/                 # Unit tests for utilities
+│   ├── sorting.test.js   # Tests for sorting logic
+│   └── pagination.test.js # Tests for pagination logic
+└── integration/          # Integration tests for endpoints
+    └── collections.test.js # Tests for /collections endpoint
+```
+
+### Test Coverage
+
+- **Unit Tests**: Test utility functions (sorting, pagination) in isolation
+- **Integration Tests**: Test full HTTP endpoints with database interactions
+- **Validation Tests**: Ensure proper error handling for invalid inputs
+
+**Note**: Integration tests require a running PostgreSQL database with test data.
 
 ## Documentation
 
