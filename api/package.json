@@ -4,7 +4,15 @@
   "private": true,
   "scripts": {
     "start": "node ./routes/server.js",
-    "dev": "nodemon ./routes/server.js"
+    "dev": "nodemon ./routes/server.js",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "coveragePathIgnorePatterns": ["/node_modules/"],
+    "testMatch": ["**/tests/**/*.test.js"]
   },
   "dependencies": {
     "axios": "^1.11.0",
@@ -19,6 +27,8 @@
     "pug": "2.0.0-beta11"
   },
   "devDependencies": {
-    "nodemon": "^3.1.10"
+    "jest": "^30.2.0",
+    "nodemon": "^3.1.10",
+    "supertest": "^7.1.4"
   }
 }
