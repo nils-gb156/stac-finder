@@ -177,6 +177,45 @@ function validateSource(source) {
     return true;
 }
 
+
+//TODO: Verbindung zum Server herstellen
+/**
+ * @function getURLsFromQueue
+ * loads the URLs from the que table in the database using postgres
+ * @returns {Array} response - an array of URLs
+ */
+export async function getURLsFromQueue() {
+
+    //create a postgres client
+    let {Client} = pkg
+
+    //get the database login data from the .env file
+    let loginData = {
+        host: process.env.DB_HOST,
+        port: process.env.DB_PORT,
+        user: process.env.DB_USER,
+        password: process.env.DB_PASS,
+        database: process.env.DB_NAME
+    }
+
+    const client = new Client(loginData)
+
+    await client.connect()
+
+    const data = await client.query('SELECT url FROM stac.sources')
+
+    await client.end();
+
+    //return an array of all the URLs from the 
+    return data
+}
+
+export async function addURLToQueue() {
+}
+
+export async function removeURLFromQueue(){
+}
+
 /**
  * Initializes the queue by loading DB sources.
  */
