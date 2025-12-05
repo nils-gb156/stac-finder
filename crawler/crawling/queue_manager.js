@@ -6,7 +6,6 @@
 //imports
 import { logger } from "./src/config/logger.js"
 import { query } from "./src/data/db_client.js"
-import 'dotenv/config'
 
 //functions
 
