@@ -106,7 +106,7 @@ const getCollectionById = async (req, res) => {
     const { id } = req.params;
 
     try {
-        // erweitern der Query, um die BBox-Koordinaten direkt aus der Geometrie zu ziehen
+        // Extend the query to extract BBox coordinates directly from the geometry
         const query = `
             SELECT *, 
                    ST_XMin(spatial_extent) as xmin, 
@@ -136,7 +136,7 @@ const getCollectionById = async (req, res) => {
             description: row.description,
             extent: {
                 spatial: {
-                    // BBox aus den berechneten Koordinaten zusammensetzen
+                    // Compose BBox from the calculated coordinates
                     bbox: [[row.xmin, row.ymin, row.xmax, row.ymax]]
                 },
                 temporal: {

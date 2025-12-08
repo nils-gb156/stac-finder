@@ -1,8 +1,5 @@
-const { spawn } = require('child_process');
-const path = require('path');
-
 /**
- * Convert CQL2 filter to SQL WHERE clause using cql2 library (Rust-based)
+ * Convert CQL2 filter to SQL WHERE clause via Python cql2 library
  * 
  * @param {Object|string} cql2Filter - CQL2 filter as object, JSON string, or CQL2 text
  * @returns {Promise<{sql: string, params: Array}>} SQL WHERE clause with parameters

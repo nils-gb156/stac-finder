@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-CQL2 to SQL Converter Service using cql2 library (Rust-based)
+CQL2 to SQL Converter Service using cql2 Python library
 Usage: python cql2-service.py '<cql2-filter>'
 """
 
