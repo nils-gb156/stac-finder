@@ -10,7 +10,12 @@ api/
 ├── routes/               # Express routers for each endpoint 
 ├── middleware/           # Logging, error handling, etc. 
 ├── db/                   # PostgreSQL connection and query helpers 
-├── utils/                # Helper functions (e.g. CQL2 parser) 
+├── utils/                # Helper functions and utilities
+│   ├── sorting.js        # Sort parameter parsing and validation
+│   ├── pagination.js     # Pagination logic and link generation
+│   ├── filtering.js      # Filter parameter validation (q, bbox, datetime, filter)
+│   ├── queryBuilder.js   # CQL2 to SQL conversion
+│   └── cql2-service.py   # Python service for CQL2 parsing (using cql2 library)
 ├── tests/                # Unit and integration tests
 ├── app.js                # Main Express app entry point 
 ├── .env                  # Environment variables 
@@ -78,13 +83,44 @@ All query parameters are validated against whitelists to prevent SQL injection a
 
 **STAC API Compliance**: This implements the [STAC API Sort Extension](https://github.com/stac-api-extensions/sort) and follows OGC API - Features pagination patterns for HTTP GET requests.
 
+### Filtering (Prepared Structure)
+
+The API has prepared utilities for implementing STAC-compliant filtering:
+
+#### Text Search (`q`)
+- **`q`**: Full-text search across title, description, keywords, ...
+- **Status**: Structure prepared in `utils/filtering.js`
+- **Planned**: PostgreSQL ILIKE or full-text search (to_tsvector)
+
+#### Bounding Box (`bbox`)
+- **`bbox`**: Spatial filter as `minx,miny,maxx,maxy` (WGS84)
+- **Status**: Validation implemented in `utils/filtering.js`
+- **Planned**: PostGIS ST_Intersects query with spatial_extent column
+
+#### Datetime (`datetime`)
+- **`datetime`**: Temporal filter as ISO8601 interval
+- **Status**: Structure prepared in `utils/filtering.js`
+- **Planned**: Filter using temporal_start and temporal_end columns
+
+#### CQL2 Filter (`filter`, `filter-lang`)
+- **`filter`**: Complex queries using CQL2 (Common Query Language)
+- **`filter-lang`**: `cql2-text` or `cql2-json`
+- **Status**: Integration prepared with Python cql2 library
+- **Implementation**: `utils/filtering.js` → `utils/queryBuilder.js` → `utils/cql2-service.py`
+
+**Note**: All filter utilities include input validation and SQL injection protection.
+
 ## Development Guidelines
 
 - Each route is defined in `routes/` and linked to a controller in `controllers/`.
 - Use `express.Router()` for modular routing.
-- Add reusable logic (e.g. CQL2 parsing) in `utils/`.
+- Add reusable logic in `utils/`:
+  - **Input validation and parsing** → `utils/filtering.js`, `utils/sorting.js`, `utils/pagination.js`
+  - **Query building** → `utils/queryBuilder.js`
+  - **External services** → `utils/cql2-service.py`
 - Use `middleware/` for logging and error handling.
 - Keep database logic in `db/index.js`.
+- All utilities should return consistent error objects: `{ status, error, message }`
 
 ## Testing
 

@@ -60,27 +60,18 @@ Start the application in the project directory:
 
 ## API Usage
 
-### Collections Endpoint
+The STAC API is accessible at `http://localhost:4000` and provides endpoints for browsing collections and searching geospatial data.
 
-Get all collections:
-```
-GET http://localhost:4000/collections
-```
+**Main Endpoints:**
+- `GET /collections` - List all STAC collections with filtering, sorting and pagination
+- `GET /collections/{id}` - Get detailed information about a specific collection
 
-Sort collections fields (ascending):
-```
-GET http://localhost:4000/collections?sortby=title
-GET http://localhost:4000/collections?sortby=-title
-GET http://localhost:4000/collections?sortby=+title,-id
-```
+**Features:**
+- STAC 1.0.0 compliant responses
+- Pagination with configurable limits
+- Sorting by multiple fields
+- Input validation and SQL injection protection
 
-Pagination (limit results per page):
-```
-GET http://localhost:4000/collections?limit=20
-```
-
-**Sorting:** `sortby=field` (default ascending), `sortby=+field` (ascending), `sortby=-field` (descending)  
-**Available fields:** `id`, `title`, `description`, `license`  
-**Pagination:** `limit` parameter (default: 10, max: 10000). Use `next`/`prev` links in response to navigate pages.
-
-For more API details, see [API README](api/README.md).
+**For detailed API documentation, parameters, and examples:**
+- [API Documentation](api/README.md) - Complete API reference with all endpoints and parameters
+- [Database Documentation](docs/database/) - Database schema and access guides
