@@ -21,7 +21,12 @@
                     list.innerHTML = '<li>no collections in database</li>';
                 } else {
                     list.innerHTML = data.collections
-                        .map(c => `<li><strong>${c.title}</strong> - ${c.description}</li>`)
+                        .map(c => `
+                            <li>
+                                <strong><a href="/collections/${c.id}">${c.title}</a></strong> 
+                                - ${c.description}
+                            </li>
+                        `)
                         .join('');
                 }
             });
