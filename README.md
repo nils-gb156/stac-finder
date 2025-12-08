@@ -5,9 +5,9 @@ A STAC-compliant API for browsing and searching SpatioTemporal Asset Catalogs st
 ## Features
 
 - **STAC API Collections Endpoint**: Browse all STAC collections
-- **Content Negotiation**: Returns HTML for browsers, JSON for API clients
 - **PostgreSQL/PostGIS**: Spatial database for STAC metadata
 - **Docker Setup**: Easy deployment with Docker Compose
+- **Security**: SQL injection protection through input validation
 
 ## Installation & Start
 
@@ -65,28 +65,36 @@ Start the application in the project directory:
 
 **Services included:**
 - **API Server** - Port 4000
-- **PostgreSQL + PostGIS** - Port 5433 (external), stores spatial STAC data
+- **PostgreSQL + PostGIS** - Port 5432 on finder.stacindex.org webserver
 - **pgAdmin** - Port 5050 (web interface for database management)
 
-## API Endpoints
+## API Usage
 
-### GET `/collections`
+### Collections Endpoint
 
-Returns all STAC collections from the database. Supports content negotiation via Accept header and query parameters.
-
-**Parameters:**
-- `f` (optional): Output format
-  - `json` - JSON response (default for API clients)
-  - `html` - HTML page (default for browsers)
-
-**Examples:**
-```bash
-# Browser (HTML)
-http://localhost:4000/collections
-
-# JSON for API clients
-http://localhost:4000/collections?f=json
-
-# HTML explicitly
-http://localhost:4000/collections?f=html
+Get all collections:
 ```
+GET http://localhost:4000/collections
+```
+
+Sort collections by title (ascending):
+```
+GET http://localhost:4000/collections?sortby=title
+GET http://localhost:4000/collections?sortby=+title
+```
+
+Sort collections by title (descending):
+```
+GET http://localhost:4000/collections?sortby=-title
+```
+
+Sort by multiple fields:
+```
+GET http://localhost:4000/collections?sortby=+title,-id
+```
+
+**STAC-compliant syntax:** `sortby=field` (default ascending), `sortby=+field` (ascending), `sortby=-field` (descending)  
+**Available fields:** `id`, `title`, `description`, `license`  
+**Multiple fields:** Comma-separated, e.g., `sortby=+title,-id`
+
+For more API details, see [API README](api/README.md).
