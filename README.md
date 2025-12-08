@@ -17,28 +17,18 @@ A STAC-compliant API for browsing and searching SpatioTemporal Asset Catalogs st
 2. Make sure [Docker](https://www.docker.com/) is installed.
 3. **Configure environment variables:**
    
-   The project requires two separate `.env` files with database credentials:
+   The project requires two separate `.env` files with database credentials. Copy the example files and add your passwords:
    
-   **API Service**:
-   
-   Create `/api/.env` and set the API user credentials (read-only access):
-   ```
-   DB_HOST=finder.stacindex.org
-   DB_PORT=5432
-   DB_USER=stacapi
-   DB_PASS=(enter known password)
-   DB_NAME=stacfinder
+   **API Service** (read-only access):
+   ```bash
+   cp api/.env.example api/.env
+   # Edit api/.env and set DB_PASS
    ```
    
-   **Crawler Service**:
-
-   Create `/crawler/.env` and set the crawler user credentials (read/write access):
-   ```
-   DB_HOST=finder.stacindex.org
-   DB_PORT=5432
-   DB_USER=crawler
-   DB_PASS=(enter known password)
-   DB_NAME=stacfinder
+   **Crawler Service** (read/write access):
+   ```bash
+   cp crawler/.env.example crawler/.env
+   # Edit crawler/.env and set DB_PASS
    ```
 
 ### Docker
@@ -77,24 +67,20 @@ Get all collections:
 GET http://localhost:4000/collections
 ```
 
-Sort collections by title (ascending):
+Sort collections fields (ascending):
 ```
 GET http://localhost:4000/collections?sortby=title
-GET http://localhost:4000/collections?sortby=+title
-```
-
-Sort collections by title (descending):
-```
 GET http://localhost:4000/collections?sortby=-title
-```
-
-Sort by multiple fields:
-```
 GET http://localhost:4000/collections?sortby=+title,-id
 ```
 
-**STAC-compliant syntax:** `sortby=field` (default ascending), `sortby=+field` (ascending), `sortby=-field` (descending)  
+Pagination (limit results per page):
+```
+GET http://localhost:4000/collections?limit=20
+```
+
+**Sorting:** `sortby=field` (default ascending), `sortby=+field` (ascending), `sortby=-field` (descending)  
 **Available fields:** `id`, `title`, `description`, `license`  
-**Multiple fields:** Comma-separated, e.g., `sortby=+title,-id`
+**Pagination:** `limit` parameter (default: 10, max: 10000). Use `next`/`prev` links in response to navigate pages.
 
 For more API details, see [API README](api/README.md).
