@@ -1,7 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { getCollections } = require('../controllers/collections');
-const { getCollectionById } = require('../controllers/collectionById');
+const { getCollections, getCollectionById } = require('../controllers/collections');
 
 router.get('/', getCollections);
 router.get('/:id', getCollectionById);
