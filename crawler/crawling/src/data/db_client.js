@@ -3,8 +3,9 @@
  * @description Initializes and exports a a PostgreSQL connection pool.
  */
 
-const { Pool } = require('pg');
-require('dotenv').config();
+import pkg from "pg"
+const { Pool } = pkg
+import 'dotenv/config'
 
 const pool = new Pool({
     host: process.env.DB_HOST,
@@ -19,7 +20,5 @@ pool.on('error', (err) => {
     process.exit(-1);
 });
 
-module.exports = {
-    query: (text, params) => pool.query(text, params),
-    pool
-};
+export const query = (text, params) => pool.query(text, params);
+export { pool };

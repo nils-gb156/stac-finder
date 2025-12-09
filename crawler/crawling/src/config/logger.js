@@ -3,7 +3,7 @@
  * @description Configures and exports a Winston logger instance for structured logging.
  */
 
-const winston = require("winston");
+import winston from "winston";
 
 /**
  * Winston logger instance used by all crawler modules.
@@ -11,7 +11,7 @@ const winston = require("winston");
  * 
  * @type {import("winston").Logger}
  */
-const logger = winston.createLogger({
+export const logger = winston.createLogger({
     level: "info",
     format: winston.format.combine(
         winston.format.timestamp(),
@@ -21,5 +21,3 @@ const logger = winston.createLogger({
         new winston.transports.Console(),
     ],
 });
-
-module.exports = logger;
