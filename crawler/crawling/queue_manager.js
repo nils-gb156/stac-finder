@@ -6,6 +6,7 @@
 //imports
 import { logger } from "./src/config/logger.js"
 import { query } from "./src/data/db_client.js"
+import { loadUncrawledSources } from "./source_manager.js"
 
 //functions
 
@@ -123,4 +124,39 @@ export async function isInQueue(url){
     } catch(err) {
         logger.warn(`could not show if data is in queue because of the following error: ${err}`)
     }
+}
+
+/**
+ * Initializes queue with uncrawled sources from DB
+ */
+export async function initializeQueue() {
+    const sources = await loadUncrawledSources(); // from source_manager
+
+    for (const src of sources) {
+        await addToQueue(src.title, src.url);
+    }
+
+    logger.info(`Initialized queue with ${sources.length} source URLs`);
+}
+
+/**
+ * Returns next URL in FIFO order and metadata row
+ */
+export async function getNextUrlFromDB() {
+    const result = await query(`
+        Select * FROM stac."urlQueue"
+        ORDER BY id ASC
+        LIMIT 1;
+        `);
+
+        return result.rows[0] || null;
+}
+
+export async function hasNextUrl() {
+    const result = await query(`
+        SELECT COUNT(*) AS count
+        FROM stac."urlQueue";
+        `);
+
+        return Number(result.rows[0].count) > 0;
 }
