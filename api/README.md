@@ -6,19 +6,19 @@ This folder contains the modular implementation of the STAC-compliant API. It pr
 
 ```
 api/ 
-├── controllers/          # Business logic for each route 
-├── routes/               # Express routers for each endpoint 
+├── controllers/          # Business logic for each route
+├── db/                   # PostgreSQL connection and query helpers  
 ├── middleware/           # Logging, error handling, etc. 
-├── db/                   # PostgreSQL connection and query helpers 
+├── routes/               # Express routers for each endpoint 
+├── tests/                # Unit and integration tests
 ├── utils/                # Helper functions and utilities
 │   ├── sorting.js        # Sort parameter parsing and validation
 │   ├── pagination.js     # Pagination logic and link generation
 │   ├── filtering.js      # Filter parameter validation (q, bbox, datetime, filter)
 │   ├── queryBuilder.js   # CQL2 to SQL conversion
 │   └── cql2-service.py   # Python service for CQL2 parsing (using cql2 library)
-├── tests/                # Unit and integration tests
-├── app.js                # Main Express app entry point 
 ├── .env                  # Environment variables 
+├── app.js                # Main Express app entry point 
 ├── package.json          # Dependencies and scripts
 ```
 
@@ -26,7 +26,7 @@ api/
 
 ### Collections Endpoint (`/collections`)
 
-The collections endpoint supports STAC-compliant sorting and pagination.
+The collections endpoint supports STAC-compliant sorting, pagination and filtering.
 
 #### Sorting (`sortby`)
 
@@ -79,18 +79,29 @@ GET /collections?limit=20&token=xyz    # Get next/previous page using token from
 }
 ```
 
-All query parameters are validated against whitelists to prevent SQL injection attacks.
+### Filtering
 
-**STAC API Compliance**: This implements the [STAC API Sort Extension](https://github.com/stac-api-extensions/sort) and follows OGC API - Features pagination patterns for HTTP GET requests.
+The API supports STAC-compliant filtering with multiple query parameters:
 
-### Filtering (Prepared Structure)
+#### Free-Text Search (`q`)
+- **`q`**: Free-text search across multiple collection fields
+- **Search fields**: `title`, `description`, `license`, `keywords`, `providers`
+- **Logic**: Case-insensitive ILIKE search with OR logic
+- **Multiple terms**: Space-separated terms are treated with OR (matches any term)
+- **Max length**: 200 characters
 
-The API has prepared utilities for implementing STAC-compliant filtering:
+**Examples:**
+```
+GET /collections?q=sentinel           # Find collections containing "sentinel"
+GET /collections?q=sentinel landsat   # Find collections with "sentinel" OR "landsat"
+GET /collections?q=sentinel&limit=5   # Combine with pagination
+```
 
-#### Text Search (`q`)
-- **`q`**: Full-text search across title, description, keywords, ...
-- **Status**: Structure prepared in `utils/filtering.js`
-- **Planned**: PostgreSQL ILIKE or full-text search (to_tsvector)
+**Behavior:**
+- Single term: `q=landsat` → Searches all fields for "landsat"
+- Multiple terms: `q=sentinel landsat` → Finds collections containing "sentinel" OR "landsat" in any field
+- Case-insensitive: `q=Sentinel` matches "sentinel", "SENTINEL", "Sentinel"
+- Partial matching: `q=optic` matches "optical", "optics", etc.
 
 #### Bounding Box (`bbox`)
 - **`bbox`**: Spatial filter as `minx,miny,maxx,maxy` (WGS84)
@@ -108,7 +119,7 @@ The API has prepared utilities for implementing STAC-compliant filtering:
 - **Status**: Integration prepared with Python cql2 library
 - **Implementation**: `utils/filtering.js` → `utils/queryBuilder.js` → `utils/cql2-service.py`
 
-**Note**: All filter utilities include input validation and SQL injection protection.
+**Note**: All filter utilities include input validation and SQL injection protection. Filters can be combined with sorting and pagination parameters.
 
 ## Development Guidelines
 
@@ -166,5 +177,3 @@ api/tests/
 ## Collaboration
 
 This component is maintained by the STAC API group. It provides data to the Web-UI group and receives input from the Crawler group via the shared PostgreSQL database.
-
-Please follow modular design, write clean code, and document your changes clearly.
