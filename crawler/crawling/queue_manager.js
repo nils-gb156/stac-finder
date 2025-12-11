@@ -127,7 +127,14 @@ export async function isInQueue(url){
 }
 
 /**
- * Initializes queue with uncrawled sources from DB
+ * Initializes the crawling queue by inserting all uncrawled
+ * STAC sources from the database into the urlQueue table.
+ *
+ * This provides the crawler with its initial work list.
+ *
+ * @async
+ * @function initializeQueue
+ * @returns {Promise<void>}
  */
 export async function initializeQueue() {
     const sources = await loadUncrawledSources(); // from source_manager
@@ -141,6 +148,11 @@ export async function initializeQueue() {
 
 /**
  * Returns next URL in FIFO order and metadata row
+ *
+ * @async
+ * @function getNextUrlFromDB
+ * @returns {Promis<Object|null>} The next queue entry (id, title_of_source, url_of_source)
+ *                                or null if queue is empty.
  */
 export async function getNextUrlFromDB() {
     const result = await query(`
@@ -152,6 +164,15 @@ export async function getNextUrlFromDB() {
         return result.rows[0] || null;
 }
 
+/**
+* Checks whether the queue currently contians URLs to process.
+* 
+* Used by the crawler engine to determine when to terminate.
+*
+* @async
+* @function hasNextUrl
+* @returns {Promise<boolean>} Ture if at least one entry exists, otherwise false.
+*/
 export async function hasNextUrl() {
     const result = await query(`
         SELECT COUNT(*) AS count
