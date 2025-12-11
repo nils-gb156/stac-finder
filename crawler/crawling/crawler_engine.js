@@ -1,6 +1,7 @@
 import { validateStacObject } from "../parsing/json_validator.js"
 import { addToQueue } from "./queue_manager.js"
 import { logger } from "./src/config/logger.js"
+import { getChildURLs } from "./crawler_functions.js"
 
 //TODO: evtl. mit STAC js arbeiten
 
@@ -33,30 +34,10 @@ export async function handleSTACObject(STACObject) {
                 await addToQueue(child.title, child.url)
             }
 
-            //TODO: Daten in DB schreiben
         } else {
             return
         }
     } else {
         logger.warn("Warning: Invalid STAC object")
-        
     }
-}
-
-export function getChildURLs(STACObject) {
-
-    //initialize the URL list
-    let childURLs = []
-
-    //for every child link push the URL and the title to the URL list
-    for (let link of STACObject.links) {
-        if (link.rel == "child") {
-            childURLs.push({
-                title: link.title || "no title", 
-                url: link.href
-            })
-        }
-    }
-
-    return(childURLs)
 }
