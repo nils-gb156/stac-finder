@@ -1,3 +1,5 @@
+
+//imports 
 import {
     initializeQueue,
     getNextUrlFromDB,
@@ -5,8 +7,12 @@ import {
     addToQueue,
     removeFromQueue
 } from "./queue_manager.js";
-
 import { fetchJsonFromUrl, extractChildUrls } from "./crawler_functions.js"
+import { validateStacObject } from "../parsing/json_validator.js"
+import { addToQueue } from "./queue_manager.js"
+import { logger } from "./src/config/logger.js"
+import { getChildURLs } from "./crawler_functions.js"
+
 
 /**
 * Main crawler loop:
@@ -56,10 +62,6 @@ export async function startCrawler() {
     console.log("Crawling finished");
 }
 
-import { validateStacObject } from "../parsing/json_validator.js"
-import { addToQueue } from "./queue_manager.js"
-import { logger } from "./src/config/logger.js"
-import { getChildURLs } from "./crawler_functions.js"
 
 //TODO: evtl. mit STAC js arbeiten
 
