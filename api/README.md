@@ -83,6 +83,21 @@ All query parameters are validated against whitelists to prevent SQL injection a
 
 **STAC API Compliance**: This implements the [STAC API Sort Extension](https://github.com/stac-api-extensions/sort) and follows OGC API - Features pagination patterns for HTTP GET requests.
 
+### Collection Details Endpoint (`/collections/{id}`)
+
+Retrieves the full metadata for a specific collection identified by its ID.
+
+- **Path Parameter**: `id` (Integer - The unique identifier of the collection)
+- **Response**: Returns the STAC Collection JSON (v1.0.0).
+
+**Example:**
+```
+GET /collections/123                   # Get collection with ID 123
+```
+
+**Response (JSON):**
+Returns a standard STAC Collection object including `extent`, `summaries`, and `links`.
+
 ### Filtering (Prepared Structure)
 
 The API has prepared utilities for implementing STAC-compliant filtering:
