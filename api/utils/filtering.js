@@ -5,28 +5,64 @@
  * @returns {Object} { whereClause, params, error }
  */
 const parseTextSearch = (q) => {
-    // TODO: Implement full-text search
-    // Search in: title, description, keywords, ...
-    // Use PostgreSQL ILIKE or full-text search (to_tsvector)
     if (!q || typeof q !== 'string') {
         return { whereClause: null, params: [], error: null };
     }
     
-    // Validate: no SQL injection attempts
-    if (q.includes(';') || q.includes('--') || q.includes('/*')) {
+    // Trim and validate input
+    const searchTerm = q.trim();
+    
+    if (searchTerm.length === 0) {
+        return { whereClause: null, params: [], error: null };
+    }
+    
+    // Validate maximum length (prevent abuse)
+    if (searchTerm.length > 200) {
         return {
             whereClause: null,
             params: [],
             error: {
                 status: 400,
                 error: 'Invalid search query',
-                message: 'Search query contains invalid characters'
+                message: 'Search query is too long (maximum 200 characters)'
             }
         };
     }
     
-    // TODO: Build WHERE clause for text search
-    return { whereClause: null, params: [], error: null };
+    // Split search terms by whitespace for OR logic
+    const searchTerms = searchTerm.split(/\s+/).filter(term => term.length > 0);
+    
+    if (searchTerms.length === 0) {
+        return { whereClause: null, params: [], error: null };
+    }
+    
+    // Build ILIKE search patterns for each term
+    const params = [];
+    const termConditions = [];
+    
+    searchTerms.forEach((term, index) => {
+        const paramIndex = index + 1;
+        const searchPattern = `%${term}%`;
+        params.push(searchPattern);
+        
+        // Each term searches across all fields (OR within fields)
+        termConditions.push(`(
+            title ILIKE $${paramIndex} 
+            OR description ILIKE $${paramIndex} 
+            OR license ILIKE $${paramIndex} 
+            OR array_to_string(keywords, ' ') ILIKE $${paramIndex}
+            OR array_to_string(providers, ' ') ILIKE $${paramIndex}
+        )`);
+    });
+    
+    // Combine all term conditions with OR (match any term)
+    const whereClause = `(${termConditions.join(' OR ')})`;
+    
+    return { 
+        whereClause, 
+        params, 
+        error: null 
+    };
 };
 
 /**
