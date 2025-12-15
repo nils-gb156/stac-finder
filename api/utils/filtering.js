@@ -51,7 +51,7 @@ const parseTextSearch = (q) => {
             OR description ILIKE $${paramIndex} 
             OR license ILIKE $${paramIndex} 
             OR array_to_string(keywords, ' ') ILIKE $${paramIndex}
-            OR array_to_string(providers, ' ') ILIKE $${paramIndex}
+            OR providers::text ILIKE $${paramIndex}
         )`);
     });
     

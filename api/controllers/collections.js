@@ -5,7 +5,7 @@ const { parseTextSearch } = require('../utils/filtering');
 
 const getCollections = async (req, res) => {
     try {
-        let sql = 'SELECT id, title, description, keywords, license, temporal_start, temporal_end, providers, ST_AsGeoJSON(spatial_extent)::json as spatial_extent FROM stac.collections';
+        let sql = 'SELECT id, title, description, keywords, license, temporal_start, temporal_end, providers, ST_AsGeoJSON(spatial_extent)::json as spatial_extent FROM test.collections';
         let queryParams = [];
         
         // Parse and validate text search (q parameter)
@@ -130,7 +130,7 @@ const getCollectionById = async (req, res) => {
                    ST_YMin(spatial_extent) as ymin, 
                    ST_XMax(spatial_extent) as xmax, 
                    ST_YMax(spatial_extent) as ymax 
-            FROM stac.collections 
+            FROM test.collections 
             WHERE id = $1
         `;
 
