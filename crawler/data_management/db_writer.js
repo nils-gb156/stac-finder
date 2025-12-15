@@ -1,24 +1,4 @@
-import pg from 'pg';
-import dotenv from 'dotenv';
-
-dotenv.config();
-
-const { Pool } = pg;
-
-// Initialize database connection pool from environment variables
-const pool = new Pool({
-  user: process.env.DB_USER,
-  host: process.env.DB_HOST,
-  database: process.env.DB_NAME,
-  password: process.env.DB_PASS,
-  port: process.env.DB_PORT,
-});
-
-// Terminate process on critical pool errors to prevent failures 
-pool.on('error', (err) => {
-  console.error('Unexpected error on idle client', err);
-  process.exit(-1);
-});
+import { pool } from '../crawling/src/data/db_client.js'; 
 
 // Convert any value to PostgreSQL TEXT[] array, handling nulls and type conversion
 const toTextArray = (v) =>
@@ -32,7 +12,6 @@ const safeJSON = (v, fallback) => {
   }
   return v;
 };
-
 
 /**
  * Insert or update a STAC source (API/Catalog endpoint) in the database
@@ -141,9 +120,4 @@ export async function upsertCollection(data) {
   await pool.query(query, values);
   console.log(`DB: Collection '${data.id}' upserted successfully`);
   return true;
-}
-
-// Close the database pool (for shutdowns/tests)
-export async function closePool() {
-  await pool.end();
 }
