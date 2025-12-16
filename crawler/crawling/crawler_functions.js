@@ -57,9 +57,31 @@ export function getChildURLs(STACObject) {
     //initialize the URL list
     let childURLs = []
 
+    //initialize the parent url
+    let parentURL = ""
+
+    //save the link to the STACObject as parentURL
+    for (let link of STACObject.links) {
+        if (link.rel == "self") {
+            parentURL = link.href
+        }
+    }
+
     //for every child link push the URL and the title to the URL list
     for (let link of STACObject.links) {
         if (link.rel == "child") {
+
+            //save the childURL
+            let childURL = link.href
+            
+            //if the childURL is not a valid url, add it to the parent url
+            try {
+                new URL(childURL)
+            } catch {
+                let childURL = parentURL + childURL
+            }
+            
+            //push the url and the title to the childURLs list
             childURLs.push({
                 title: link.title || "no title", 
                 url: link.href
