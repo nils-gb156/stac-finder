@@ -1,10 +1,27 @@
 const db = require('../db');
 const { parseSortby } = require('../utils/sorting');
 const { parsePaginationParams, createPaginationLinks } = require('../utils/pagination');
+const { parseTextSearch } = require('../utils/filtering');
 
 const getCollections = async (req, res) => {
     try {
-        let sql = 'SELECT id, title, description, keywords, license, temporal_start, temporal_end, providers, ST_AsGeoJSON(spatial_extent)::json as spatial_extent FROM stac.collections';
+        let sql = 'SELECT id, title, description, keywords, license, temporal_start, temporal_end, providers, ST_AsGeoJSON(spatial_extent)::json as spatial_extent FROM test.collections';
+        let queryParams = [];
+        
+        // Parse and validate text search (q parameter)
+        const { whereClause: searchWhere, params: searchParams, error: searchError } = parseTextSearch(req.query.q);
+        if (searchError) {
+            return res.status(searchError.status).json({
+                error: searchError.error,
+                message: searchError.message
+            });
+        }
+        
+        // Add WHERE clause if text search is present
+        if (searchWhere) {
+            sql += ` WHERE ${searchWhere}`;
+            queryParams.push(...searchParams);
+        }
         
         // Whitelist of allowed columns to prevent SQL injection
         const allowedColumns = ['id', 'title', 'description', 'license'];
@@ -34,7 +51,7 @@ const getCollections = async (req, res) => {
         // Add LIMIT and OFFSET to query
         sql += ` LIMIT ${limit} OFFSET ${offset}`;
 
-        const result = await db.query(sql);
+        const result = await db.query(sql, queryParams);
 
         const collections = result.rows.map((row) => {
             // Extract bbox from spatial_extent GeoJSON
@@ -113,7 +130,7 @@ const getCollectionById = async (req, res) => {
                    ST_YMin(spatial_extent) as ymin, 
                    ST_XMax(spatial_extent) as xmax, 
                    ST_YMax(spatial_extent) as ymax 
-            FROM stac.collections 
+            FROM test.collections 
             WHERE id = $1
         `;
 
