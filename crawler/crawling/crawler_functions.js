@@ -7,6 +7,13 @@ import { logger } from "./src/config/logger.js"
 
 //TODO: evtl. mit STAC js arbeiten
 
+/**
+ * @function handleSTACObject
+ * saves child urls and collection data based on the type of the given stac object
+ * @param {JSON} STACObject - given stac object, any type
+ * @param {*} Link - link to the stac object
+ * @returns 
+ */
 export async function handleSTACObject(STACObject, Link) {
 
     //only run the following code if the stac object is valid
