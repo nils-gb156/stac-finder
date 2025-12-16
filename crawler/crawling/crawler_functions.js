@@ -7,7 +7,7 @@ import { logger } from "./src/config/logger.js"
 
 //TODO: evtl. mit STAC js arbeiten
 
-export async function handleSTACObject(STACObject) {
+export async function handleSTACObject(STACObject, Link) {
 
     //only run the following code if the stac object is valid
     if (validateStacObject(STACObject).valid) {
@@ -19,7 +19,7 @@ export async function handleSTACObject(STACObject) {
         if (STACObjectType == "Catalog") {
 
             //get the titles and urls of the childs
-            let childs = getChildURLs(STACObject)
+            let childs = getChildURLs(STACObject, Link)
 
             //put the URLs into the queue
             for (let child of childs) {
@@ -29,7 +29,7 @@ export async function handleSTACObject(STACObject) {
         } else if (STACObjectType == "Collection") {
             
             //get the title and the urls of the childs
-            let childs = getChildURLs(STACObject)
+            let childs = getChildURLs(STACObject, Link)
 
             //put the URLs into the queue
             for (let child of childs) {
@@ -50,22 +50,16 @@ export async function handleSTACObject(STACObject) {
  * @function getChildURLs 
  * gets the URLs and Titles of child objects of a given stac object
  * @param {JSON} STACObject a json object with stac structure
+ * @param {string} Link the link to the stac Object
  * @returns childURLs - a list of objects containing title and url of the childs
  */
-export function getChildURLs(STACObject) {
+export function getChildURLs(STACObject, Link) {
 
     //initialize the URL list
     let childURLs = []
 
-    //initialize the parent url
-    let parentURL = ""
-
-    //save the link to the STACObject as parentURL
-    for (let link of STACObject.links) {
-        if (link.rel == "self") {
-            parentURL = link.href
-        }
-    }
+    //save the link to the STACObject as selfURL. Remove the last index to replace it with the child url 
+    let selfURL = Link.substring(0, Link.lastIndexOf('/'));
 
     //for every child link push the URL and the title to the URL list
     for (let link of STACObject.links) {
@@ -74,17 +68,17 @@ export function getChildURLs(STACObject) {
             //save the childURL
             let childURL = link.href
             
-            //if the childURL is not a valid url, add it to the parent url
+            //if the childURL is not a valid url because it is given related to the parent url, add it to the parent url
             try {
-                new URL(childURL)
+                new URL(link.href)
             } catch {
-                let childURL = parentURL + childURL
+                childURL = selfURL + childURL
             }
             
             //push the url and the title to the childURLs list
             childURLs.push({
                 title: link.title || "no title", 
-                url: link.href
+                url: childURL
             })
         }
     }
