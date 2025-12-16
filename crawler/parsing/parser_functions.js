@@ -64,8 +64,8 @@ export function parseCollection(json, sourceId, crawledAt) {
 
         // Extents
         bbox: bboxArray || null,
-        time_start: timeInterval?.[0] || null,
-        time_end: timeInterval?.[1] || null,
+        temporal_start: timeInterval?.[0] || null,
+        temporal_end: timeInterval?.[1] || null,
 
         // Search Fields
         keywords: json.keywords || [],
