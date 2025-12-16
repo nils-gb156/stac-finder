@@ -4,7 +4,6 @@
  */
 
 //imports
-import db from './src/data/db_client.js'
 import { logger } from './src/config/logger.js'
 import { query } from './src/data/db_client.js'
 
@@ -67,7 +66,7 @@ export async function getSource(id) {
  */
 export async function markSourceCrawled(id) {
     try {
-        await db.query(
+        await query(
             `UPDATE stac.sources
              SET last_crawled_timestamp = NOW()
              WHERE id = $1;`,
