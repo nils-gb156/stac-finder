@@ -1,12 +1,14 @@
+
+//imports 
 import {
     initializeQueue,
     getNextUrlFromDB,
     hasNextUrl,
-    addToQueue,
     removeFromQueue
 } from "./queue_manager.js";
-
-import { fetchJsonFromUrl, extractChildUrls } from "./crawler_functions.js"
+import { handleSTACObject } from "./crawler_functions.js"
+import { validateStacObject } from "../parsing/json_validator.js";
+import { logger } from "./src/config/logger.js"
 
 /**
 * Main crawler loop:
@@ -35,21 +37,24 @@ export async function startCrawler() {
         const entry = await getNextUrlFromDB();
         const url = entry.url_of_source;
 
+        //get the json from the url
+        const res = await fetch(url)
+        const STACObject = await res.json()
+
         console.log(`Crawling: ${url}`);
         
         // Only proceed if valid JSON was retrieved
-        if (json) {
+        if (validateStacObject(STACObject).valid) {
 
-            // Extract recursively discovered URLs (child catalogs or collections)
-            const newUrls = extractChildUrls(json);
-
-            // Add discovered URLs to queue (avoids duplicates automatically)
-            for (const newUrl of newUrls) {
-                await addToQueue(entry.title_of_source, newUrl);
+            //for Catalogs: put the child urls into the queue
+            //for Collections: put the child urls into the queue, save the data in the sources/collections db
+            handleSTACObject(STACObject, url)
+    
+            } else {
+                logger.warn("Warning: Invalid STAC object")
             }
-        }
-
-        // Remove processed URL from queue to avoid re-processing
+        
+            // Remove processed URL from queue to avoid re-processing
         await removeFromQueue(url);
     }
 
