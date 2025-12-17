@@ -50,12 +50,12 @@ export async function handleSTACObject(STACObject, Link) {
                 title: STACObject.title,
                 type: STACObject.type
             }
-            
+
             //insert source data into source table
-            upsertSource(sourceData)
+            await upsertSource(sourceData)
 
             //save collection data
-            upsertCollection(STACObject)
+            await upsertCollection(STACObject)
 
         } else {
             return
