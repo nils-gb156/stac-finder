@@ -1,4 +1,5 @@
 //imports
+import { upsertCollection, upsertSource } from "../data_management/db_writer.js"
 import { validateStacObject } from "../parsing/json_validator.js"
 import { addToQueue } from "./queue_manager.js"
 import { logger } from "./src/config/logger.js"
@@ -43,7 +44,18 @@ export async function handleSTACObject(STACObject, Link) {
                 await addToQueue(child.title, child.url)
             }
 
-            //TODO: Source / Collection Daten hochladen
+            //save source data
+            let sourceData = {
+                url: Link,
+                title: STACObject.title,
+                type: STACObject.type
+            }
+            
+            //insert source data into source table
+            upsertSource(sourceData)
+
+            //save collection data
+            upsertCollection(STACObject)
 
         } else {
             return
