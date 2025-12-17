@@ -148,6 +148,45 @@ GET /collections?q=sentinel&limit=5   # Combine with pagination
 
 **Note**: All filter utilities include input validation and SQL injection protection. Filters can be combined with sorting and pagination parameters.
 
+### Health Endpoint (`/health`)
+
+The health endpoint is used to monitor the operational status of the STACFinder API and its database connection.
+
+#### Purpose
+
+The endpoint allows users, monitoring tools, and the web user interface to quickly check:
+
+- whether the API server is running, and
+- whether the database is reachable.
+
+It does not return any STAC data and performs only a lightweight database check.
+
+#### Example Response
+```json
+{
+  "status": "degraded",
+  "api": "up",
+  "database": "down",
+  "target": {
+    "host": "host.docker.internal",
+    "port": "5432",
+    "database": "local_stacfinder"
+  },
+  "timestamp": "2025-12-15T11:54:14.164Z"
+}
+```
+- **`status`**: Overall sydtem status
+  - **`ok`**: API and database are fully operational
+  - **`degraded`**: API is running, but the database is not reachable
+
+- **`api`**: Indicates whether the API server is responding (`up`)
+
+- **`database`**: Indicates whether a connection to the database could be established
+
+- **`target`**: Shows which database configuration the health check is currently testing. This is mainly intended for development and debugging
+
+- **`timestamp`**: Time of the health check in UTC (Coordinated Universal Time)
+
 ## Development Guidelines
 
 - Each route is defined in `routes/` and linked to a controller in `controllers/`.
