@@ -36,6 +36,19 @@ export async function upsertSource(source) {
 }
 
 /**
+ * Resolve a source id by its URL.
+ * @param {string} url
+ * @returns {Promise<number|null>} id if found, otherwise null
+ */
+export async function getSourceIdByUrl(url) {
+  const res = await pool.query(
+    `SELECT id FROM stac.sources WHERE url = $1 LIMIT 1;`,
+    [url]
+  );
+  return res.rows[0]?.id ?? null;
+}
+
+/**
  * Insert or update a STAC collection with metadata normalization
  * Handles array/JSON conversions, spatial geometry, and temporal bounds 
  * Implements Duplicate Handling via Upsert Strategy
