@@ -53,9 +53,11 @@ export async function handleSTACObject(STACObject, Link) {
 
             //insert source data into source table
             await upsertSource(sourceData)
+            logger.info("added Source data to Database")
 
             //save collection data
             await upsertCollection(STACObject)
+            logger.info("added Collection data to Database")
 
         } else {
             return
