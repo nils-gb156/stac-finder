@@ -79,21 +79,22 @@ export function getChildURLs(STACObject, Link) {
     //initialize the URL list
     let childURLs = []
 
-    //save the link to the STACObject as selfURL. Remove the last index to replace it with the child url 
-    let selfURL = Link.substring(0, Link.lastIndexOf('/'));
 
-    //for every child link push the URL and the title to the URL list
+    //iterate through all links in STAC object
     for (let link of STACObject.links) {
-        if (link.rel == "child") {
 
-            //save the childURL
-            let childURL = link.href
+        //process links that are marked as "child" and have a valid href
+        if (link.rel === "child" && link.href) {
+
             
-            //if the childURL is not a valid url because it is given related to the parent url, add it to the parent url
+            let childURL
+            
+            //build full child URL from parent URL
             try {
-                new URL(link.href)
+                childURL = new URL(link.href, Link).href
             } catch {
-                childURL = selfURL + childURL
+                //skips invalid URLs without breaking crawl
+                continue
             }
             
             //push the url and the title to the childURLs list
