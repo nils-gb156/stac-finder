@@ -26,7 +26,6 @@ export async function getSTACIndexData() {
             data.push(row)
         }
 
-        console.log(data)
         logger.info(`Loaded ${result.rows.length} URLs from the stac index database.`)
 
         return data
