@@ -14,9 +14,10 @@ import { loadUncrawledSources } from "./source_manager.js"
  * Adds a URL to the queue if not already present.
  * @param {string} title title of the url
  * @param {string} url 
+ * @param {string|null} parentUrl The URL of the parent catalog
  * @function addToQueue
  */
-export async function addToQueue(title, url) {
+export async function addToQueue(title, url, parentUrl = null) {
 
     // validate URL format
     try {
@@ -32,6 +33,16 @@ export async function addToQueue(title, url) {
         return
     }
 
+    // validate parentUrl 
+    if (parentUrl != null) {
+        try {
+            new URL(parentUrl)
+        } catch {
+            logger.warn(`Did not add the following invalid parent URL to the queue: ${parentUrl}`)
+            parentUrl = null
+        }
+    }
+
     //check if the url is already in the queue
     if (await isInQueue(url)){
         logger.info(`Did not added the following url: ${url}, because it is already in the queue`)
@@ -41,9 +52,9 @@ export async function addToQueue(title, url) {
     try {
         //upload title and url
         await query(`
-            INSERT INTO stac."urlQueue" (title_of_source, url_of_source)
-            VALUES ($1, $2)`,
-            [title, url]
+            INSERT INTO stac."urlQueue" (title_of_source, url_of_source, parent_url)
+            VALUES ($1, $2, $3)`,
+            [title, url, parentUrl]
         )
         
         //log uploaded Data
@@ -140,7 +151,7 @@ export async function initializeQueue() {
     const sources = await loadUncrawledSources(); // from source_manager
 
     for (const src of sources) {
-        await addToQueue(src.title, src.url);
+        await addToQueue(src.title, src.url, null);
     }
 
     logger.info(`Initialized queue with ${sources.length} source URLs`);
