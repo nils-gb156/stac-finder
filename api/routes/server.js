@@ -21,6 +21,9 @@ app.use('/collections', collectionsRouter);
 const queryablesRouter = require('./queryables');
 app.use('/collections/queryables', queryablesRouter);
 
+// Health check route
+const healthRouter = require('./health');
+app.use('/health', healthRouter);
 
 // Start server
 app.listen(port, host, () => {

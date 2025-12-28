@@ -5,9 +5,9 @@ A STAC-compliant API for browsing and searching SpatioTemporal Asset Catalogs st
 ## Features
 
 - **STAC API Collections Endpoint**: Browse all STAC collections
-- **Content Negotiation**: Returns HTML for browsers, JSON for API clients
 - **PostgreSQL/PostGIS**: Spatial database for STAC metadata
 - **Docker Setup**: Easy deployment with Docker Compose
+- **Security**: SQL injection protection through input validation
 
 ## Installation & Start
 
@@ -17,28 +17,18 @@ A STAC-compliant API for browsing and searching SpatioTemporal Asset Catalogs st
 2. Make sure [Docker](https://www.docker.com/) is installed.
 3. **Configure environment variables:**
    
-   The project requires two separate `.env` files with database credentials:
+   The project requires two separate `.env` files with database credentials. Copy the example files and add your passwords:
    
-   **API Service**:
-   
-   Create `/api/.env` and set the API user credentials (read-only access):
-   ```
-   DB_HOST=finder.stacindex.org
-   DB_PORT=5432
-   DB_USER=stacapi
-   DB_PASS=(enter known password)
-   DB_NAME=stacfinder
+   **API Service** (read-only access):
+   ```bash
+   cp api/.env.example api/.env
+   # Edit api/.env and set DB_PASS
    ```
    
-   **Crawler Service**:
-
-   Create `/crawler/.env` and set the crawler user credentials (read/write access):
-   ```
-   DB_HOST=finder.stacindex.org
-   DB_PORT=5432
-   DB_USER=crawler
-   DB_PASS=(enter known password)
-   DB_NAME=stacfinder
+   **Crawler Service** (read/write access):
+   ```bash
+   cp crawler/.env.example crawler/.env
+   # Edit crawler/.env and set DB_PASS
    ```
 
 ### Docker
@@ -65,28 +55,23 @@ Start the application in the project directory:
 
 **Services included:**
 - **API Server** - Port 4000
-- **PostgreSQL + PostGIS** - Port 5433 (external), stores spatial STAC data
+- **PostgreSQL + PostGIS** - Port 5432 on finder.stacindex.org webserver
 - **pgAdmin** - Port 5050 (web interface for database management)
 
-## API Endpoints
+## API Usage
 
-### GET `/collections`
+The STAC API is accessible at `http://localhost:4000` and provides endpoints for browsing collections and searching geospatial data.
 
-Returns all STAC collections from the database. Supports content negotiation via Accept header and query parameters.
+**Main Endpoints:**
+- `GET /collections` - List all STAC collections with filtering, sorting and pagination
+- `GET /collections/{id}` - Get detailed information about a specific collection
 
-**Parameters:**
-- `f` (optional): Output format
-  - `json` - JSON response (default for API clients)
-  - `html` - HTML page (default for browsers)
+**Features:**
+- STAC 1.0.0 compliant responses
+- Pagination with configurable limits
+- Sorting by multiple fields
+- Input validation and SQL injection protection
 
-**Examples:**
-```bash
-# Browser (HTML)
-http://localhost:4000/collections
-
-# JSON for API clients
-http://localhost:4000/collections?f=json
-
-# HTML explicitly
-http://localhost:4000/collections?f=html
-```
+**For detailed API documentation, parameters, and examples:**
+- [API Documentation](api/README.md) - Complete API reference with all endpoints and parameters
+- [Database Documentation](docs/database/) - Database schema and access guides

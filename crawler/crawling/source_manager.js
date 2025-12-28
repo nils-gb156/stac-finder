@@ -1,72 +1,83 @@
 /**
  * @file source_manager.js
- * @description Provides functions to load, validate, filter and update STAC source records 
- *              stored in the database. The Source Manager is the entry point for determining
- *              which URLs the crawler should process.
+ * @description Manages the crawlable STAC sources URLs and the dynamic crawling queue.
  */
-import { prisma } from "../data/prisma.js";
-import { logger } from "../config/logger.js";
+
+//imports
+import { logger } from './src/config/logger.js'
+import { query } from './src/data/db_client.js'
+
+//functions
 
 /**
  * Load all STAC sources from the database.
  * 
- * @async
  * @function loadSources
  * @returns {Promise<Array<Object>>} List of source objects with normalized fields.
  */
 export async function loadSources() {
     try {
-        const sources = await prisma.source.findMany();
+        const result = await query(`
+            SELECT
+                id,
+                title,
+                url,
+                type,
+                last_crawled_timestamp
+            FROM stac.sources;
+        `)
 
-        logger.info(`Loaded ${sources.length} sources from database.`);
-
-        return sources.map(src => ({
-            id: src.id,
-            title: src.title,
-            url: src.url,
-            type: src.type,
-            metadata: src.metadata ?? {},
-            lastCrawled: src.last_crawled_timestamp
-        }));
+        logger.info(`Loaded ${result.rows.length} sources from database.`)
+        return result.rows
 
     } catch (error) {
-        logger.error("Error loading sources: " + error.message);
-        throw error;
+        logger.error("Error loading sources: " + error.message)
+        throw error
     }
 }
 
 /**
  * Retrieve a single source record by ID.
  * 
- * @async
  * @function getSource
  * @param {number} id - The ID of the source to load.
  * @returns {Promised<Object|null>} The source record or null if not found.
  */
 export async function getSource(id) {
-    return prisma.source.findUnique({ where: { id } });
+    try {
+        const result = await query(
+            `SELECT * FROM stac.sources WHERE id = $1 LIMIT 1;`,
+            [id]
+        )
+
+        return result.rows[0] || null
+    } catch (error) {
+        logger.error(`Error loading source ${id}: ${error.message}`)
+        throw error
+    }
 }
 
 /**
  * Mark a source as successfully crawled by updating its timestamp.
  * 
- * @async
  * @function markSourceCrawled
  * @param {number} id - The source ID to update.
  * @returns {Promise<void>}
  */
 export async function markSourceCrawled(id) {
     try {
-        await prisma.source.update({
-            where: { id },
-            data: {
-                last_crawled_timestamp: new Date()
-            }
-        });
-        logger.info(`Marked source ${id} as crawled.`);
+        await query(
+            `UPDATE stac.sources
+             SET last_crawled_timestamp = NOW()
+             WHERE id = $1;`,
+            [id]
+        )
+
+        logger.info(`Marked source ${id} as crawled.`)
+
     } catch (error) {
-        logger.error("Failed to update source ${id}: " + error.message);
-        throw error;
+        logger.error(`Failed to update source ${id}: ` + error.message)
+        throw error
     }
     
 }
@@ -74,26 +85,24 @@ export async function markSourceCrawled(id) {
 /**
  * Load only sources that appear valid (URL + type present).
  * 
- * @async
  * @function loadActiveSources
  * @returns {Promise<Array<Object>>} Filtered sources that are crawlable.
  */
 export async function loadActiveSources() {
-    const sources = await loadSources();
+    const sources = await loadSources()
 
-    return sources.filter(src => src.url && src.type);
+    return sources.filter(validateSource)
 }
 
 /**
  * Load sources that have never been crawled.
  *
- * @async
  * @function loadUncrawledSources
  * @returns {Promise<Array<Object>>} Sources whose lastCrawled field is null.
  */
 export async function loadUncrawledSources() {
-  const sources = await loadSources();
-  return sources.filter(src => !src.lastCrawled);
+  const sources = await loadSources()
+  return sources.filter(src => !src.last_crawled_timestamp)
 }
 
 /**
@@ -106,14 +115,14 @@ export async function loadUncrawledSources() {
  * @returns {boolean} True if valid, otherwise false.
  */
 export function validateSource(source) {
-    if (!source.url) return false;
-    if (!source.type) return false;
+    if (!source.url) return false
+    if (!source.type) return false
 
     try {
-        new URL(source.url); // throws on invalid URLs
+        new URL(source.url) // throws on invalid URLs
     } catch {
-        return false;
+        return false
     }
 
-    return true;
+    return true
 }

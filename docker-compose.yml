@@ -3,7 +3,7 @@ services:
   # pgAdmin Web Interface
   pgadmin:
     image: dpage/pgadmin4:latest
-    container_name: stacfinder-pgadmin
+    container_name: pgadmin
     environment:
       - PGADMIN_DEFAULT_EMAIL=admin@admin.com
       - PGADMIN_DEFAULT_PASSWORD=admin
@@ -15,7 +15,7 @@ services:
       - pgadmin_data:/var/lib/pgadmin
     
   api:
-    container_name: STACFinder
+    container_name: stac-api
     build: .
     ports:
       - "4000:3000"
