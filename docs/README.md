@@ -1,7 +1,7 @@
 # STAC Finder Documentation
 
 ## API Documentation
-- [Collections](api/collection.md)
+- [Collections](api/collections.md)
 - [Health Check](api/health.md)
 - [Sorting](api/sorting.md)
 - [Pagination](api/pagination.md)
