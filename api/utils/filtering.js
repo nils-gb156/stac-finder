@@ -131,19 +131,26 @@ const parseBboxFilter = (bbox) => {
 };
 
 /**
- * Parse datetime filter parameter
- * @param {string} datetime - Datetime range as ISO8601 interval
+ * Parse datetime filter parameter (STAC-conformant)
+ * Supports ISO8601 intervals and temporal operations (BEFORE, AFTER, DURING)
+ * 
+ * @param {string} datetime - Datetime as single timestamp or interval
+ * 
+ * Supported formats:
+ * - Single timestamp: "2020-01-01T00:00:00Z" (exact match or contains)
+ * - Closed interval: "2020-01-01T00:00:00Z/2020-12-31T23:59:59Z" (DURING)
+ * - Open start: "../2020-12-31T23:59:59Z" (BEFORE or ends before)
+ * - Open end: "2020-01-01T00:00:00Z/.." (AFTER or starts after)
+ * - Fully open: "../.." (any temporal extent)
+ * 
  * @returns {Object} { whereClause, params, error }
  */
 const parseDatetimeFilter = (datetime) => {
-    // TODO: Implement datetime filtering
-    // Format: "2020-01-01T00:00:00Z/2020-12-31T23:59:59Z" or "../2020-12-31" or "2020-01-01/.."
-    // Use temporal_start and temporal_end columns
     if (!datetime) {
         return { whereClause: null, params: [], error: null };
     }
     
-    // Validate datetime format (basic check)
+    // Validate datetime is a string
     if (typeof datetime !== 'string') {
         return {
             whereClause: null,
@@ -156,8 +163,127 @@ const parseDatetimeFilter = (datetime) => {
         };
     }
     
-    // TODO: Parse ISO8601 interval and build WHERE clause
-    return { whereClause: null, params: [], error: null };
+    const trimmed = datetime.trim();
+    
+    // Handle fully open interval (matches any temporal extent)
+    if (trimmed === '../..' || trimmed === '') {
+        return { whereClause: null, params: [], error: null };
+    }
+    
+    // Check if it's an interval (contains '/')
+    if (trimmed.includes('/')) {
+        const parts = trimmed.split('/');
+        
+        if (parts.length !== 2) {
+            return {
+                whereClause: null,
+                params: [],
+                error: {
+                    status: 400,
+                    error: 'Invalid datetime interval',
+                    message: 'datetime interval must have format: start/end'
+                }
+            };
+        }
+        
+        const [startStr, endStr] = parts;
+        
+        // Parse start and end timestamps
+        const hasStart = startStr !== '..';
+        const hasEnd = endStr !== '..';
+        
+        let startDate = null;
+        let endDate = null;
+        
+        if (hasStart) {
+            startDate = new Date(startStr);
+            if (isNaN(startDate.getTime())) {
+                return {
+                    whereClause: null,
+                    params: [],
+                    error: {
+                        status: 400,
+                        error: 'Invalid datetime',
+                        message: `Invalid start datetime: ${startStr}`
+                    }
+                };
+            }
+        }
+        
+        if (hasEnd) {
+            endDate = new Date(endStr);
+            if (isNaN(endDate.getTime())) {
+                return {
+                    whereClause: null,
+                    params: [],
+                    error: {
+                        status: 400,
+                        error: 'Invalid datetime',
+                        message: `Invalid end datetime: ${endStr}`
+                    }
+                };
+            }
+        }
+        
+        // Validate that start < end if both are present
+        if (hasStart && hasEnd && startDate >= endDate) {
+            return {
+                whereClause: null,
+                params: [],
+                error: {
+                    status: 400,
+                    error: 'Invalid datetime interval',
+                    message: 'Start datetime must be before end datetime'
+                }
+            };
+        }
+        
+        // Build WHERE clause based on interval type
+        const conditions = [];
+        const params = [];
+        
+        if (hasStart && hasEnd) {
+            // DURING: Collection temporal extent overlaps with query interval
+            // Overlap condition: collection_start <= query_end AND (collection_end >= query_start OR collection_end IS NULL)
+            params.push(endStr, startStr);
+            conditions.push(`(temporal_start <= $${params.length - 1} AND (temporal_end >= $${params.length} OR temporal_end IS NULL))`);
+        } else if (hasStart && !hasEnd) {
+            // AFTER: Collection starts on or after the given time (open end)
+            // Or: Collection temporal extent intersects with [start, infinity)
+            params.push(startStr);
+            conditions.push(`(temporal_end >= $${params.length} OR temporal_end IS NULL)`);
+        } else if (!hasStart && hasEnd) {
+            // BEFORE: Collection ends on or before the given time (open start)
+            // Or: Collection temporal extent intersects with (-infinity, end]
+            params.push(endStr);
+            conditions.push(`(temporal_start <= $${params.length})`);
+        }
+        
+        const whereClause = conditions.length > 0 ? conditions.join(' AND ') : null;
+        return { whereClause, params, error: null };
+        
+    } else {
+        // Single timestamp: find collections that contain this timestamp
+        // Collection contains timestamp if: temporal_start <= timestamp <= temporal_end
+        const timestamp = new Date(trimmed);
+        
+        if (isNaN(timestamp.getTime())) {
+            return {
+                whereClause: null,
+                params: [],
+                error: {
+                    status: 400,
+                    error: 'Invalid datetime',
+                    message: `Invalid datetime: ${trimmed}`
+                }
+            };
+        }
+        
+        const params = [trimmed, trimmed];
+        const whereClause = `(temporal_start <= $1 AND (temporal_end >= $2 OR temporal_end IS NULL))`;
+        
+        return { whereClause, params, error: null };
+    }
 };
 
 const parseCql2Filter = (filter, filterLang) => {
