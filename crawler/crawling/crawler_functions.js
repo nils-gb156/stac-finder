@@ -1,5 +1,5 @@
 //imports
-import { upsertCollection, upsertSource } from "../data_management/db_writer.js"
+import { getSourceIdByUrl, upsertCollection, upsertSource } from "../data_management/db_writer.js"
 import { validateStacObject } from "../parsing/json_validator.js"
 import { addToQueue } from "./queue_manager.js"
 import { logger } from "./src/config/logger.js"
@@ -12,59 +12,91 @@ import { logger } from "./src/config/logger.js"
  * @function handleSTACObject
  * saves child urls and collection data based on the type of the given stac object
  * @param {JSON} STACObject - given stac object, any type
- * @param {*} Link - link to the stac object
+ * @param {string} Link - link to the stac object
+ * @param {string|null} parentUrl - url of the parent catalog/collection as stored in the queue
  * @returns 
  */
-export async function handleSTACObject(STACObject, Link) {
+export function makeHandleSTACObject(deps = {}) {
+    const {
+        validateStacObject: validate = validateStacObject,
+        upsertSource: upsertSourceFn = upsertSource,
+        getSourceIdByUrl: getSourceIdByUrlFn = getSourceIdByUrl,
+        upsertCollection: upsertCollectionFn = upsertCollection,
+        addToQueue: addToQueueFn = addToQueue,
+        getChildURLs: getChildURLsFn = getChildURLs,
+        logger: loggerFn = logger,
+    } = deps
 
-    //only run the following code if the stac object is valid
-    if (validateStacObject(STACObject).valid) {
-        
-        //check the type of the stac object
-        let STACObjectType = STACObject.type
+    return async function handleSTACObjectImpl(STACObject, Link, parentUrl = null) {
 
-        //depending on the type, run the following code:
-        if (STACObjectType == "Catalog") {
-
-            //get the titles and urls of the childs
-            let childs = getChildURLs(STACObject, Link)
-
-            //put the URLs into the queue
-            for (let child of childs) {
-                await addToQueue(child.title, child.url)
-            }
-
-        } else if (STACObjectType == "Collection") {
+        //only run the following code if the stac object is valid
+        if (validate(STACObject).valid) {
             
-            //get the title and the urls of the childs
-            let childs = getChildURLs(STACObject, Link)
+            //check the type of the stac object
+            let STACObjectType = STACObject.type
 
-            //put the URLs into the queue
-            for (let child of childs) {
-                await addToQueue(child.title, child.url)
+            // Track the source id of the currently crawled Catalog/Collection (self)
+            let currentSourceId = null
+
+            // Catalogs and Collections should be stored in sources
+            if (STACObjectType === "Catalog" || STACObjectType === "Collection") {
+                const sourceData = {
+                    url: Link,
+                    title: STACObject.title,
+                    type: STACObject.type
+                }
+                currentSourceId = await upsertSourceFn(sourceData)
             }
 
-            //save source data
-            let sourceData = {
-                url: Link,
-                title: STACObject.title,
-                type: STACObject.type
+            //depending on the type, run the following code:
+            if (STACObjectType == "Catalog") {
+
+                //get the titles and urls of the childs
+                let childs = getChildURLsFn(STACObject, Link)
+
+                //put the URLs into the queue
+                for (let child of childs) {
+                    await addToQueueFn(child.title, child.url, Link)
+                }
+
+            } else if (STACObjectType == "Collection") {
+                
+                //get the title and the urls of the childs
+                let childs = getChildURLsFn(STACObject, Link)
+
+                //put the URLs into the queue
+                for (let child of childs) {
+                    await addToQueueFn(child.title, child.url, Link)
+                }
+
+                // Resolve parent source_id from sources table via parentUrl
+                let parentSourceId = null
+                if (parentUrl) {
+                    parentSourceId = await getSourceIdByUrlFn(parentUrl)
+                    if (!parentSourceId) {
+                        loggerFn.warn(`Could not resolve parent source id for collection ${Link} (parentUrl=${parentUrl})`)
+                    }
+                } else {
+                    // Root-collection (start URL) should link to itself as source
+                    parentSourceId = currentSourceId
+                }
+
+                // save collection data with FK to its parent source (if available)
+                await upsertCollectionFn({ ...STACObject, source_id: parentSourceId })
+
+            } else {
+                return
             }
-
-            //insert source data into source table
-            await upsertSource(sourceData)
-            logger.info("added Source data to Database")
-
-            //save collection data
-            await upsertCollection(STACObject)
-            logger.info("added Collection data to Database")
-
         } else {
-            return
+            loggerFn.warn("Warning: Invalid STAC object")
         }
-    } else {
-        logger.warn("Warning: Invalid STAC object")
     }
+}
+
+const _defaultHandleSTACObject = makeHandleSTACObject()
+
+export async function handleSTACObject(STACObject, Link, parentUrl = null) {
+    return _defaultHandleSTACObject(STACObject, Link, parentUrl)
 }
 
 /**

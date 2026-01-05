@@ -46,6 +46,7 @@ export async function startCrawler() {
         // Fetch next URL entry from queue table
         const entry = await getNextUrlFromDB();
         const url = entry.url_of_source;
+        const parentUrl = entry.parent_url ?? null;
 
         //get the json from the url
         const res = await fetch(url)
@@ -58,7 +59,7 @@ export async function startCrawler() {
 
             //for Catalogs: put the child urls into the queue
             //for Collections: put the child urls into the queue, save the data in the sources/collections db
-            handleSTACObject(STACObject, url)
+            await handleSTACObject(STACObject, url, parentUrl)
     
             } else {
                 logger.warn("Warning: Invalid STAC object")
