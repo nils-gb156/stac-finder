@@ -1,12 +1,13 @@
 const db = require('../db');
 const { parseSortby } = require('../utils/sorting');
 const { parsePaginationParams, createPaginationLinks } = require('../utils/pagination');
-const { parseTextSearch } = require('../utils/filtering');
+const { parseTextSearch, parseDatetimeFilter } = require('../utils/filtering');
 
 const getCollections = async (req, res) => {
     try {
         let sql = 'SELECT id, title, description, keywords, license, temporal_start, temporal_end, providers, ST_AsGeoJSON(spatial_extent)::json as spatial_extent FROM test.collections';
         let queryParams = [];
+        const whereClauses = [];
         
         // Parse and validate text search (q parameter)
         const { whereClause: searchWhere, params: searchParams, error: searchError } = parseTextSearch(req.query.q);
@@ -17,10 +18,32 @@ const getCollections = async (req, res) => {
             });
         }
         
-        // Add WHERE clause if text search is present
         if (searchWhere) {
-            sql += ` WHERE ${searchWhere}`;
+            whereClauses.push(searchWhere);
             queryParams.push(...searchParams);
+        }
+        
+        // Parse and validate datetime filter (dateime parameter)
+        const { whereClause: datetimeWhere, params: datetimeParams, error: datetimeError } = parseDatetimeFilter(req.query.datetime);
+        if (datetimeError) {
+            return res.status(datetimeError.status).json({
+                error: datetimeError.error,
+                message: datetimeError.message
+            });
+        }
+        
+        if (datetimeWhere) {
+            // Adjust parameter placeholders based on existing parameters
+            const adjustedWhere = datetimeWhere.replace(/\$(\d+)/g, (match, num) => {
+                return `$${queryParams.length + parseInt(num)}`;
+            });
+            whereClauses.push(adjustedWhere);
+            queryParams.push(...datetimeParams);
+        }
+        
+        // Add WHERE clause if any filters are present
+        if (whereClauses.length > 0) {
+            sql += ` WHERE ${whereClauses.join(' AND ')}`;
         }
         
         // Whitelist of allowed columns to prevent SQL injection
