@@ -1,7 +1,7 @@
 const db = require('../db');
 const { parseSortby } = require('../utils/sorting');
 const { parsePaginationParams, createPaginationLinks } = require('../utils/pagination');
-const { parseTextSearch, parseDatetimeFilter } = require('../utils/filtering');
+const { parseTextSearch, parseDatetimeFilter, parseBboxFilter } = require('../utils/filtering');
 
 const getCollections = async (req, res) => {
     try {
@@ -40,6 +40,24 @@ const getCollections = async (req, res) => {
             whereClauses.push(adjustedWhere);
             queryParams.push(...datetimeParams);
         }
+
+        // Parse and validate bbox filter (bbox parameter)
+        const { whereClause: bboxWhere, params: bboxParams, error: bboxError } = parseBboxFilter(req.query.bbox);
+        if (bboxError) {
+            return res.status(bboxError.status).json({
+                error: bboxError.error,
+                message: bboxError.message
+            });
+        }
+
+        if (bboxWhere) {
+            const adjustedWhere = bboxWhere.replace(/\$(\d+)/g, (match, num) => {
+                return `$${queryParams.length + parseInt(num, 10)}`;
+            });
+            whereClauses.push(adjustedWhere);
+            queryParams.push(...bboxParams);
+        }
+
         
         // Add WHERE clause if any filters are present
         if (whereClauses.length > 0) {

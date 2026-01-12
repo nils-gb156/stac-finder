@@ -67,68 +67,103 @@ const parseTextSearch = (q) => {
 
 /**
  * Parse bbox filter parameter
- * @param {string|Array} bbox - Bounding box as "minx,miny,maxx,maxy" or array
+ * @param {string|Array} bbox - Bounding box as "minx,miny,maxx,maxy" (or 6 values) or array
  * @returns {Object} { whereClause, params, error }
  */
 const parseBboxFilter = (bbox) => {
-    // TODO: Implement bbox filtering
-    // Format: minx,miny,maxx,maxy (WGS84)
-    // Use PostGIS ST_Intersects with spatial_extent column
-    if (!bbox) {
-        return { whereClause: null, params: [], error: null };
-    }
-    
-    // Parse bbox string to array
-    let bboxArray;
-    if (typeof bbox === 'string') {
-        bboxArray = bbox.split(',').map(v => parseFloat(v));
-    } else if (Array.isArray(bbox)) {
-        bboxArray = bbox.map(v => parseFloat(v));
-    } else {
-        return {
-            whereClause: null,
-            params: [],
-            error: {
-                status: 400,
-                error: 'Invalid bbox format',
-                message: 'bbox must be "minx,miny,maxx,maxy"'
-            }
-        };
-    }
-    
-    // Validate bbox has 4 coordinates
-    if (bboxArray.length !== 4 || bboxArray.some(isNaN)) {
-        return {
-            whereClause: null,
-            params: [],
-            error: {
-                status: 400,
-                error: 'Invalid bbox',
-                message: 'bbox must contain 4 valid numbers: minx,miny,maxx,maxy'
-            }
-        };
-    }
-    
-    const [minx, miny, maxx, maxy] = bboxArray;
-    
-    // Validate coordinate ranges
-    if (minx < -180 || minx > 180 || maxx < -180 || maxx > 180 ||
-        miny < -90 || miny > 90 || maxy < -90 || maxy > 90) {
-        return {
-            whereClause: null,
-            params: [],
-            error: {
-                status: 400,
-                error: 'Invalid bbox coordinates',
-                message: 'Longitude must be -180 to 180, latitude must be -90 to 90'
-            }
-        };
-    }
-    
-    // TODO: Build PostGIS ST_Intersects WHERE clause
-    // Example: ST_Intersects(spatial_extent, ST_MakeEnvelope($1, $2, $3, $4, 4326))
+  if (!bbox) {
     return { whereClause: null, params: [], error: null };
+  }
+
+  // Parse bbox string/array to numeric array
+  let bboxArray;
+  if (typeof bbox === 'string') {
+    bboxArray = bbox.split(',').map(v => parseFloat(String(v).trim()));
+  } else if (Array.isArray(bbox)) {
+    bboxArray = bbox.map(v => parseFloat(String(v).trim()));
+  } else {
+    return {
+      whereClause: null,
+      params: [],
+      error: {
+        status: 400,
+        error: 'Invalid bbox format',
+        message: 'bbox must be "minx,miny,maxx,maxy" (or 6 values) or an array'
+      }
+    };
+  }
+
+  // STAC allows 4 or 6 values (minx,miny,minz,maxx,maxy,maxz)
+  if (
+    (bboxArray.length !== 4 && bboxArray.length !== 6) ||
+    bboxArray.some(v => Number.isNaN(v))
+  ) {
+    return {
+      whereClause: null,
+      params: [],
+      error: {
+        status: 400,
+        error: 'Invalid bbox',
+        message: 'bbox must contain 4 (or 6) valid numbers'
+      }
+    };
+  }
+
+  // If 6 values: ignore z (altitude) for 2D spatial filtering
+  const minx = bboxArray[0];
+  const miny = bboxArray[1];
+  const maxx = bboxArray.length === 6 ? bboxArray[3] : bboxArray[2];
+  const maxy = bboxArray.length === 6 ? bboxArray[4] : bboxArray[3];
+
+  // Validate lat order
+  if (miny > maxy) {
+    return {
+      whereClause: null,
+      params: [],
+      error: {
+        status: 400,
+        error: 'Invalid bbox coordinates',
+        message: 'miny must be <= maxy'
+      }
+    };
+  }
+
+  // Validate coordinate ranges (WGS84)
+  if (
+    minx < -180 || minx > 180 || maxx < -180 || maxx > 180 ||
+    miny < -90  || miny > 90  || maxy < -90  || maxy > 90
+  ) {
+    return {
+      whereClause: null,
+      params: [],
+      error: {
+        status: 400,
+        error: 'Invalid bbox coordinates',
+        message: 'Longitude must be -180..180 and latitude must be -90..90'
+      }
+    };
+  }
+
+  // Normal case: minx <= maxx
+  if (minx <= maxx) {
+    const params = [minx, miny, maxx, maxy];
+    const whereClause = `ST_Intersects(spatial_extent, ST_MakeEnvelope($1, $2, $3, $4, 4326))`;
+    return { whereClause, params, error: null };
+  }
+
+  // Anti-meridian crossing (minx > maxx): split into two envelopes and OR them
+  // Envelope A: [-180, miny, maxx, maxy]
+  // Envelope B: [minx,  miny, 180, maxy]
+  const params = [-180, miny, maxx, maxy, minx, miny, 180, maxy];
+  const whereClause = `(
+    ST_Intersects(spatial_extent, ST_MakeEnvelope($1, $2, $3, $4, 4326))
+    OR
+    ST_Intersects(spatial_extent, ST_MakeEnvelope($5, $6, $7, $8, 4326))
+  )`;
+
+  return { whereClause, params, error: null };
 };
+
 
 /**
  * Parse datetime filter parameter (STAC-conformant)
