@@ -1,7 +1,7 @@
 const db = require('../db');
 const { parseSortby } = require('../utils/sorting');
 const { parsePaginationParams, createPaginationLinks } = require('../utils/pagination');
-const { parseTextSearch } = require('../utils/filtering');
+const { parseTextSearch, parseDatetimeFilter } = require('../utils/filtering');
 
 const { parseCql2 } = require('../utils/cql2parser');
 const { astToSql } = require('../utils/cql2sql');
