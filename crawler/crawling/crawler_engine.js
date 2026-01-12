@@ -1,4 +1,3 @@
-
 //imports 
 import {
     initializeQueue,
@@ -11,6 +10,40 @@ import { handleSTACObject } from "./crawler_functions.js"
 import { validateStacObject } from "../parsing/json_validator.js";
 import { logger } from "./src/config/logger.js"
 import { getSTACIndexData } from "../data_management/stac_index_client.js";
+
+const CRAWL_DELAY_MS = 1000; // Polite delay
+const MAX_RETRIES = 3;       // Max attempts
+const RETRY_DELAY_MS = 2000; // Base backoff time
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/**
+ * Retry-aware fetch:
+ * - retries: Network errors, 5xx Server Errors, and 429 (Rate Limit) with linear backoff.
+ * - aborts fast on fatal 4xx (except 429)
+ * - returns parsed JSON on success
+ */
+async function fetchWithRetry(url, maxRetries = MAX_RETRIES) {
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+            logger.info(`Fetching ${url} (attempt ${attempt}/${maxRetries})`);
+            const response = await fetch(url);
+            const status = response.status;
+            if (response.ok) return await response.json();
+            if (status >= 400 && status < 500 && status !== 429) {
+                throw new Error(`Fatal Client Error ${status}: ${response.statusText} - Will not retry.`);
+            }
+            throw new Error(`Request failed with status ${status}: ${response.statusText}`);
+        } catch (error) {
+            if (error.message.includes("Fatal Client Error")) throw error;
+            logger.warn(`Attempt ${attempt} failed for ${url}: ${error.message}`);
+            if (attempt === maxRetries) throw new Error(`Failed after ${maxRetries} attempts: ${error.message}`);
+            const delay = RETRY_DELAY_MS * attempt;
+            logger.info(`Waiting ${delay}ms before next retry...`);
+            await sleep(delay);
+        }
+    }
+}
 
 /**
 * Main crawler loop:
@@ -32,12 +65,14 @@ export async function startCrawler() {
     // Initialize queue from database
     await initializeQueue();
 
-    // get the urls from the STAC Index db
-    const STACIndexData = await getSTACIndexData();
-    
-    //push the urls to the queue
-    for (let data of STACIndexData) {
-        await addToQueue(data.title, data.url);
+    // Load URLs from STAC Index (fail-safe)
+    try {
+        const STACIndexData = await getSTACIndexData();
+        for (let data of STACIndexData) {
+            await addToQueue(data.title, data.url);
+        }
+    } catch (err) {
+        logger.error("Could not load STAC Index data, starting with existing queue only.");
     }
 
     // Continue crawling until no URLs remain in queue
@@ -126,6 +161,7 @@ export async function continueCrawlingProcess() {
         
         // Remove processed URL from queue to avoid re-processing
         await removeFromQueue(url);
+        await sleep(CRAWL_DELAY_MS);
     }
 
     console.log("Crawling finished");
