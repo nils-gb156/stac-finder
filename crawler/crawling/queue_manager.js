@@ -24,13 +24,15 @@ export async function addToQueue(title, url, parentUrl = null) {
         new URL(url)
     } catch {
         logger.warn(`Did not added the following invalid URL to the queue: ${url}`)
-        return
+        //return 0 to add it to the counter
+        return 0
     }
 
     // validate title
     if (typeof title !== "string") {
         logger.warn(`Did not added the following invalid entry with the title: ${title}`)
-        return
+        //return 0
+        return 0
     }
 
     // validate parentUrl 
@@ -42,11 +44,10 @@ export async function addToQueue(title, url, parentUrl = null) {
             parentUrl = null
         }
     }
-
     //check if the url is already in the queue
     if (await isInQueue(url)){
-        logger.info(`Did not added the following url: ${url}, because it is already in the queue`)
-        return
+        //return 0
+        return 0
     }
 
     try {
@@ -57,11 +58,14 @@ export async function addToQueue(title, url, parentUrl = null) {
             [title, url, parentUrl]
         )
         
-        //log uploaded Data
-        logger.info(`Added to queue: ${title}, ${url}`)
+        //return 1 to add it to the counter
+        return 1
     } catch(err) {
         //log error
         logger.warn(`Did not add the data to the queue because of the following error: ${err}`)
+
+        //return 0
+        return 0
     }
 }
 

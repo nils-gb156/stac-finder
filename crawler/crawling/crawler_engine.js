@@ -60,17 +60,26 @@ async function fetchWithRetry(url, maxRetries = MAX_RETRIES) {
 */
 export async function startCrawler() {
 
-    console.log("Crawler started");
+    logger.info("Crawler started");
 
     // Initialize queue from database
     await initializeQueue();
 
     // Load URLs from STAC Index (fail-safe)
     try {
+        //initialize upload counter
+        const i = 0;
+
+        //get the data from the STAC Index Database
         const STACIndexData = await getSTACIndexData();
+
         for (let data of STACIndexData) {
-            await addToQueue(data.title, data.url);
+            //add the urls to the queue and add 0 or 1 to the upload counter
+            i = i + await addToQueue(data.title, data.url);
         }
+
+        logger.info(`Added ${i} URL('s) to the queue.`)
+
     } catch (err) {
         logger.error("Could not load STAC Index data, starting with existing queue only.");
     }
@@ -88,7 +97,7 @@ export async function startCrawler() {
             const res = await fetch(url)
             const STACObject = await res.json()
 
-            console.log(`Crawling: ${url}`);
+            logger.info(`Crawling: ${url}`);
             
             // Only proceed if valid JSON was retrieved
             if (validateStacObject(STACObject).valid) {
@@ -109,7 +118,7 @@ export async function startCrawler() {
         await removeFromQueue(url);
     }
 
-    console.log("Crawling finished");
+    logger.info("Crawling finished");
 }
 
 /**
@@ -127,7 +136,7 @@ export async function startCrawler() {
 */
 export async function continueCrawlingProcess() {
 
-    console.log("Crawling Process starts again where it stopped");
+    logger.info("Crawling Process starts again where it stopped");
 
     // Continue crawling until no URLs remain in queue
     while (await hasNextUrl()) {
@@ -142,7 +151,7 @@ export async function continueCrawlingProcess() {
             const res = await fetch(url)
             const STACObject = await res.json()
 
-            console.log(`Crawling: ${url}`);
+            logger.info(`Crawling: ${url}`);
             
             // Only proceed if valid JSON was retrieved
             if (validateStacObject(STACObject).valid) {
@@ -164,5 +173,5 @@ export async function continueCrawlingProcess() {
         await sleep(CRAWL_DELAY_MS);
     }
 
-    console.log("Crawling finished");
+    logger.info("Crawling finished");
 }

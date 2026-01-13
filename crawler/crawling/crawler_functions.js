@@ -31,6 +31,9 @@ export function makeHandleSTACObject(deps = {}) {
 
         //only run the following code if the stac object is valid
         if (validate(STACObject).valid) {
+
+            //set upload counter to 0
+            let i = 0
             
             //check the type of the stac object
             let STACObjectType = STACObject.type
@@ -56,18 +59,22 @@ export function makeHandleSTACObject(deps = {}) {
 
                 //put the URLs into the queue
                 for (let child of childs) {
-                    await addToQueueFn(child.title, child.url, Link)
+                    i = i + await addToQueueFn(child.title, child.url, Link)
                 }
+
+                loggerFn.info(`Added ${i} URL('s) to the queue`)
 
             } else if (STACObjectType == "Collection") {
                 
                 //get the title and the urls of the childs
                 let childs = getChildURLsFn(STACObject, Link)
 
-                //put the URLs into the queue
+                //put the URLs into the queue and update the upload counter
                 for (let child of childs) {
-                    await addToQueueFn(child.title, child.url, Link)
+                    i = i + await addToQueueFn(child.title, child.url, Link)
                 }
+
+                loggerFn.info(`Added ${i} URL('s) to the queue`)
 
                 // Resolve parent source_id from sources table via parentUrl
                 let parentSourceId = null
