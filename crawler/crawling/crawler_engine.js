@@ -10,6 +10,7 @@ import { handleSTACObject } from "./crawler_functions.js"
 import { validateStacObject } from "../parsing/json_validator.js";
 import { logger } from "./src/config/logger.js"
 import { getSTACIndexData } from "../data_management/stac_index_client.js";
+import { isInSources } from "./source_manager.js";
 
 const CRAWL_DELAY_MS = 1000; // Polite delay
 const MAX_RETRIES = 3;       // Max attempts
@@ -68,17 +69,21 @@ export async function startCrawler() {
     // Load URLs from STAC Index (fail-safe)
     try {
         //initialize upload counter
-        const i = 0;
+        let i = 0;
 
         //get the data from the STAC Index Database
         const STACIndexData = await getSTACIndexData();
 
         for (let data of STACIndexData) {
-            //add the urls to the queue and add 0 or 1 to the upload counter
-            i = i + await addToQueue(data.title, data.url);
+            //if the data was never crawled:
+
+            if (isInSources(data.url)) {
+                //add the urls to the queue and add 0 or 1 to the upload counter
+                i = i + await addToQueue(data.title, data.url);
+            }
         }
 
-        logger.info(`Added ${i} URL('s) to the queue.`)
+        logger.info(`Added ${i} URL('s) from the STAC Index Database to the queue.`)
 
     } catch (err) {
         logger.error("Could not load STAC Index data, starting with existing queue only.");

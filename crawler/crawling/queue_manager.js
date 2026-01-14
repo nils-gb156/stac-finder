@@ -130,6 +130,7 @@ export async function isInQueue(url){
             WHERE url_of_source = $1`,
             [url])
 
+        //if there is any data in queue, return true
         if (data.rowCount > 0){
             return true
         } else {
