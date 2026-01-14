@@ -1,6 +1,6 @@
 //imports 
 import {
-    addToQueue,
+    initializeQueue,
     getNextUrlFromDB,
     hasNextUrl,
     removeFromQueue,
