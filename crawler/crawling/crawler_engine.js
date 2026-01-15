@@ -175,5 +175,5 @@ export async function continueCrawlingProcess() {
         await sleep(CRAWL_DELAY_MS);
     }
 
-    console.log("Crawling finished");
+    logger.info("Crawling finished");
 }
