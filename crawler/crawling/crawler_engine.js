@@ -59,7 +59,7 @@ async function fetchWithRetry(url, maxRetries = MAX_RETRIES) {
 */
 export async function startCrawler() {
 
-    console.log("Crawler started");
+    logger.info("Crawler started");
  
     // we now load sources manually to check their type.
     const sources = await loadUncrawledSources(); //
