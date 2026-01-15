@@ -6,15 +6,13 @@ import { logger } from "./src/config/logger.js"
 
 //helping functions for the crawler engine
 
-//TODO: evtl. mit STAC js arbeiten
-
 /**
  * @function handleSTACObject
- * saves child urls and collection data based on the type of the given stac object
+ * saves catalog and collection data based on the type of the given stac object
  * @param {JSON} STACObject - given stac object, any type
  * @param {string} Link - link to the stac object
  * @param {string|null} parentUrl - url of the parent catalog/collection as stored in the queue
- * @returns 
+ * @returns {object} - child data (if the stac object is a collection)
  */
 export function makeHandleSTACObject(deps = {}) {
     const {
@@ -31,9 +29,6 @@ export function makeHandleSTACObject(deps = {}) {
 
         //only run the following code if the stac object is valid
         if (validate(STACObject).valid) {
-
-            //set upload counter to 0
-            let i = 0
             
             //check the type of the stac object
             let STACObjectType = STACObject.type
@@ -57,24 +52,12 @@ export function makeHandleSTACObject(deps = {}) {
                 //get the titles and urls of the childs
                 let childs = getChildURLsFn(STACObject, Link)
 
-                //put the URLs into the queue
-                for (let child of childs) {
-                    i = i + await addToQueueFn(child.title, child.url, Link)
-                }
-
-                loggerFn.info(`Added ${i} URL('s) to the queue`)
+                return childs
 
             } else if (STACObjectType == "Collection") {
                 
                 //get the title and the urls of the childs
                 let childs = getChildURLsFn(STACObject, Link)
-
-                //put the URLs into the queue and update the upload counter
-                for (let child of childs) {
-                    i = i + await addToQueueFn(child.title, child.url, Link)
-                }
-
-                loggerFn.info(`Added ${i} URL('s) to the queue`)
 
                 // Resolve parent source_id from sources table via parentUrl
                 let parentSourceId = null
@@ -91,8 +74,12 @@ export function makeHandleSTACObject(deps = {}) {
                 // save collection data with FK to its parent source (if available)
                 await upsertCollectionFn({ ...STACObject, source_id: parentSourceId })
 
+                return childs
+
             } else {
-                return
+
+                //TODO: Hier warning?
+                return null
             }
         } else {
             loggerFn.warn("Warning: Invalid STAC object")
@@ -126,7 +113,7 @@ export function getChildURLs(STACObject, Link) {
         if (link.rel === "child" && link.href) {
 
             
-            let childURL
+            let childURL = []
             
             //build full child URL from parent URL
             try {
@@ -145,4 +132,45 @@ export function getChildURLs(STACObject, Link) {
     }
 
     return(childURLs)
+}
+
+/**
+ * @function validateQueueEntry
+ * validates a queue entry to make sure that only valid objects will be crawled
+ * @param {string} title - title of a stac object
+ * @param {string} url - url of a stac object
+ * @param {string} parentUrl - parent url of a stac object
+ * @returns true if everything is ok
+ *          false if there is any Problem with the source
+ */
+export async function validateQueueEntry(title, url, parentUrl = null) {
+    
+    // validate URL format
+    try {
+        new URL(url)
+    } catch {
+        logger.warn(`Did not added the following invalid URL to the queue: ${url}`)
+        //return false
+        return false
+    }
+
+    // validate title
+    if (typeof title !== "string") {
+        logger.warn(`Did not added the following invalid entry with the title: ${title}`)
+        //return false
+        return false
+    }
+
+    // validate parentUrl 
+    if (parentUrl != null) {
+        try {
+            new URL(parentUrl)
+        } catch {
+            logger.warn(`Did not add the following invalid parent URL to the queue: ${parentUrl}`)
+            //return false
+            return false
+        }
+    }
+
+    return true
 }
