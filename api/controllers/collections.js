@@ -1,7 +1,7 @@
 const db = require('../db');
 const { parseSortby } = require('../utils/sorting');
 const { parsePaginationParams, createPaginationLinks } = require('../utils/pagination');
-const { parseTextSearch, parseDatetimeFilter } = require('../utils/filtering');
+const { parseTextSearch, parseDatetimeFilter, parseBboxFilter } = require('../utils/filtering');
 
 const { parseCql2 } = require('../utils/cql2parser');
 const { astToSql } = require('../utils/cql2sql');
@@ -43,6 +43,43 @@ const getCollections = async (req, res) => {
         });
       }
     }
+
+      // --- Datetime filter (datetime=...) ---
+      const { whereClause: datetimeWhere, params: datetimeParams, error: datetimeError } = parseDatetimeFilter(req.query.datetime);
+      if (datetimeError) {
+          return res.status(datetimeError.status).json({
+              error: datetimeError.error,
+              message: datetimeError.message
+          });
+      }
+
+      if (datetimeWhere) {
+          // Adjust parameter placeholders based on existing parameters
+          const adjustedWhere = datetimeWhere.replace(/\$(\d+)/g, (match, num) => {
+              return `$${queryParams.length + parseInt(num, 10)}`;
+          });
+          whereParts.push(`(${adjustedWhere})`);
+          queryParams.push(...datetimeParams);
+      }
+
+      // --- BBox filter (bbox=...) ---
+      const { whereClause: bboxWhere, params: bboxParams, error: bboxError } = parseBboxFilter(req.query.bbox);
+      if (bboxError) {
+          return res.status(bboxError.status).json({
+              error: bboxError.error,
+              message: bboxError.message
+          });
+      }
+
+      if (bboxWhere) {
+          const adjustedWhere = bboxWhere.replace(/\$(\d+)/g, (match, num) => {
+              return `$${queryParams.length + parseInt(num, 10)}`;
+          });
+          whereParts.push(`(${adjustedWhere})`);
+          queryParams.push(...bboxParams);
+      }
+
+
 
     // Apply WHERE if any
     if (whereParts.length > 0) {

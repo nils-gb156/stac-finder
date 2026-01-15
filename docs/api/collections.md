@@ -26,14 +26,14 @@ The endpoint supports multiple query parameters that can be combined:
 
 | Parameter | Type | Description | Documentation |
 |-----------|------|-------------|---------------|
-| `q` | string | Free-text search across collection metadata | [Free-text search](filtering/free-text-search.md) |
-| `datetime` | string | Temporal filter using ISO8601 intervals | [Datetime Filtering](filtering/datetime.md) |
-| `bbox` | string | Spatial filter as bounding box coordinates | [Bounding Box Filtering](filtering/bbox.md) |
-| `filter` | string | CQL2 filter expression for complex queries | [CQL2 Filtering](filtering/cql2-text.md) |
-| `filter-lang` | string | Filter language specification (cql2-text, cql2-json) | [CQL2 Filtering](filtering/cql2-text.md) |
-| `sortby` | string | Sort by field with direction prefix | [Sorting](sorting.md) |
-| `limit` | integer | Maximum number of results per page | [Pagination](pagination.md) |
-| `token` | string | Opaque pagination token | [Pagination](pagination.md) |
+| `q` | string | Free-text search across collection metadata | [Free-text search](query-param/free-text-search.md) |
+| `datetime` | string | Temporal filter using ISO8601 intervals | [Datetime Filtering](query-param/datetime.md) |
+| `bbox` | string | Spatial filter as bounding box coordinates | [Bounding Box Filtering](query-param/bbox.md) |
+| `filter` | string | CQL2 filter expression for complex queries | [CQL2 Filtering](query-param/cql2-text.md) |
+| `filter-lang` | string | Filter language specification (cql2-text, cql2-json) | [CQL2 Filtering](query-param/cql2-text.md) |
+| `sortby` | string | Sort by field with direction prefix | [Sorting](query-param/sorting.md) |
+| `limit` | integer | Maximum number of results per page | [Pagination](query-param/pagination.md) |
+| `token` | string | Opaque pagination token | [Pagination](query-param/pagination.md) |
 
 ### Response
 

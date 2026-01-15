@@ -202,6 +202,28 @@ It does not return any STAC data and performs only a lightweight database check.
 
 - **`timestamp`**: Time of the health check in UTC (Coordinated Universal Time)
 
+## Logging & Monitoring
+
+The API includes comprehensive request and error logging using Winston and Morgan:
+
+- **HTTP Request Logging**: Every API request is logged with method, URL, status code, response time, IP address, and user agent
+- **Error Logging**: Errors are logged with full stacktrace and request context
+- **Log Rotation**: Daily log files with automatic rotation (max 20MB per file, 14 days retention)
+- **Log Files**: 
+  - `logs/combined-YYYY-MM-DD.log` - All logs (info, warn, error)
+  - `logs/error-YYYY-MM-DD.log` - Error logs only
+
+**Viewing Logs:**
+```bash
+# Live logs (console output)
+docker-compose logs -f api
+
+# Log files (inside container)
+docker exec stac-api cat /app/api/logs/combined-2026-01-06.log
+```
+
+For detailed documentation, see [docs/api/logging.md](../docs/api/logging.md).
+
 ## Development Guidelines
 
 - Each route is defined in `routes/` and linked to a controller in `controllers/`.
