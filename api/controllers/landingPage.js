@@ -4,7 +4,7 @@ const getLandingPage = async (req, res) => {
         
         const landingPage = {
             type: 'Catalog',
-            version: '1.0.0'
+            version: '1.0.0',
             id: 'stacfinder',
             title: 'STACFinder API',
             description: 'A STAC-compliant API for browsing and searching SpatioTemporal Asset Catalogs stored in PostgreSQL/PostGIS.',
