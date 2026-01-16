@@ -6,7 +6,9 @@ import {
     removeFromQueue,
     addToQueue
 } from "./queue_manager.js";
-import { handleSTACObject, validateQueueEntry } from "./crawler_functions.js"
+
+import { loadUncrawledSources } from "./source_manager.js";
+import { handleSTACObject, crawlStacApi } from "./crawler_functions.js";
 import { validateStacObject } from "../parsing/json_validator.js";
 import { logger } from "./src/config/logger.js"
 import { getSTACIndexData } from "../data_management/stac_index_client.js";
@@ -48,23 +50,32 @@ async function fetchWithRetry(url, maxRetries = MAX_RETRIES) {
 
 /**
 * Main crawler loop:
-* - initializes queue from DB (unrcrawled sources)
-* - repeatedly fetches next URLs
-* - adds new URLs back into queue
-* - removes processed URL
-*
-* This function implements the core recursive traversal described in the Pflichtenheft.
+* - Loads uncrawled sources from DB
+* - Strategy A (API): Crawls directly via /collections
+* - Strategy B (Static): Adds to queue for recursive processing
 *
 * @async
 * @function startCrawler
-* @returns {Promise<void>} Completes when no URLs remain in the queue
+* @returns {Promise<void>} Completes when all APIs are done and the static queue is empty
 */
 export async function startCrawler() {
 
     logger.info("Crawler started");
+ 
+    // we now load sources manually to check their type.
+    const sources = await loadUncrawledSources(); //
+    
+    logger.info(`Found ${sources.length} sources to process.`);
 
-    // Initialize queue from database
-    await initializeQueue();
+    for (const source of sources) {
+        if (source.type === 'API') {
+            // Process directly, no queue needed for the collections list
+            await crawlStacApi(source); //
+        } else {
+            // Add to queue to start the recursive crawling loop
+            await addToQueue(source.title, source.url, null); //
+        }
+    }
 
     // Load URLs from STAC Index (fail-safe)
     try {

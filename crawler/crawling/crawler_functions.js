@@ -3,6 +3,7 @@ import { getSourceIdByUrl, upsertCollection, upsertSource } from "../data_manage
 import { validateStacObject } from "../parsing/json_validator.js"
 import { addToQueue } from "./queue_manager.js"
 import { logger } from "./src/config/logger.js"
+import { markSourceCrawled } from "./source_manager.js"
 
 //helping functions for the crawler engine
 
