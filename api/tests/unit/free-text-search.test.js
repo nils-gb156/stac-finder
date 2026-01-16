@@ -212,7 +212,7 @@ describe('Free-Text Search Utils', () => {
         const result = parseTextSearch('test');
         
         expect(result.whereClause).toContain('ILIKE');
-        expect(result.whereClause).not.toContain('LIKE ');
+        expect(result.whereClause).not.toMatch(/\bLIKE\s/);
       });
 
       test('should use OR logic between fields for same term', () => {
@@ -316,6 +316,86 @@ describe('Free-Text Search Utils', () => {
         
         expect(result.error).toBeNull();
         expect(result.params).toEqual(['%https://example.com%']);
+      });
+    });
+
+    describe('SQL Injection & Special Characters', () => {
+      test('should handle SQL wildcard % character', () => {
+        const result = parseTextSearch('test%data');
+        
+        expect(result.error).toBeNull();
+        expect(result.params).toEqual(['%test%data%']);
+        // Note: % is not escaped - this could match unintended patterns
+        // This is a potential security/functionality issue
+      });
+
+      test('should handle SQL wildcard _ character', () => {
+        const result = parseTextSearch('test_data');
+        
+        expect(result.error).toBeNull();
+        expect(result.params).toEqual(['%test_data%']);
+        // Note: _ is not escaped - could match any single character
+      });
+
+      test('should handle single quote character', () => {
+        const result = parseTextSearch("test'data");
+        
+        expect(result.error).toBeNull();
+        expect(result.params).toEqual(["%test'data%"]);
+        // Single quotes should be safe with parameterized queries
+      });
+
+      test('should handle backslash character', () => {
+        const result = parseTextSearch('test\\data');
+        
+        expect(result.error).toBeNull();
+        expect(result.params[0]).toContain('\\');
+      });
+
+      test('should handle multiple SQL special characters', () => {
+        const result = parseTextSearch("test%_'data");
+        
+        expect(result.error).toBeNull();
+        expect(result.params.length).toBe(1);
+      });
+    });
+
+    describe('Parameter Index Management', () => {
+      test('should start parameter indices at $1', () => {
+        const result = parseTextSearch('test');
+        
+        expect(result.whereClause).toContain('$1');
+        expect(result.whereClause).not.toContain('$0');
+      });
+
+      test('should increment indices sequentially for multiple terms', () => {
+        const result = parseTextSearch('term1 term2 term3');
+        
+        expect(result.whereClause).toContain('$1');
+        expect(result.whereClause).toContain('$2');
+        expect(result.whereClause).toContain('$3');
+        expect(result.params.length).toBe(3);
+      });
+
+      test('should match params length with highest parameter index', () => {
+        const result = parseTextSearch('a b c d e');
+        
+        const maxIndex = Math.max(...Array.from(result.whereClause.matchAll(/\$(\d+)/g)).map(m => parseInt(m[1])));
+        expect(result.params.length).toBe(maxIndex);
+      });
+    });
+
+    describe('Array and Keywords field handling', () => {
+      test('should search in keywords array using array_to_string', () => {
+        const result = parseTextSearch('optical');
+        
+        expect(result.whereClause).toContain("array_to_string(keywords, ' ')");
+      });
+
+      test('should search in providers using text cast', () => {
+        const result = parseTextSearch('ESA');
+        
+        expect(result.whereClause).toContain('providers::text');
       });
     });
   });
