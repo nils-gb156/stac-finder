@@ -1,6 +1,7 @@
 const express = require('express');
 const path = require('path');
 const app = express();
+const landingPageRouter = require('./routes/landingPage');
 const collectionsRouter = require('./routes/collections');
 const healthRouter = require('./routes/health');
 const queryablesRouter = require('./routes/queryables');
@@ -15,6 +16,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
 // Routes
+app.use('/', landingPageRouter);
 app.use('/collections', collectionsRouter);
 app.use('/collections/queryables', queryablesRouter);
 app.use('/health', healthRouter);
