@@ -1,9 +1,10 @@
 //imports
-import { getSourceIdByUrl, upsertCollection, upsertSource } from "../data_management/db_writer.js"
+import { getSourceIdByUrl, upsertCollection, upsertSource, getLastCrawledTimestamp  } from "../data_management/db_writer.js"
 import { validateStacObject } from "../parsing/json_validator.js"
 import { addToQueue } from "./queue_manager.js"
 import { logger } from "./src/config/logger.js"
 import { markSourceCrawled } from "./source_manager.js"
+import { parseCollection } from "../parsing/parser_functions.js"
 
 //helping functions for the crawler engine
 
@@ -24,6 +25,7 @@ export function makeHandleSTACObject(deps = {}) {
         addToQueue: addToQueueFn = addToQueue,
         getChildURLs: getChildURLsFn = getChildURLs,
         logger: loggerFn = logger,
+        getLastCrawledTimestamp: getLastCrawledTimestampFn = getLastCrawledTimestamp,
     } = deps
 
     return async function handleSTACObjectImpl(STACObject, Link, parentUrl = null) {
@@ -33,6 +35,11 @@ export function makeHandleSTACObject(deps = {}) {
             
             //check the type of the stac object
             let STACObjectType = STACObject.type
+
+            // Get last crawl time before upsertSource updates it to NOW()
+            const lastCrawled = (STACObjectType === "Collection")
+                ? await getLastCrawledTimestampFn(Link)
+                : null
 
             // Track the source id of the currently crawled Catalog/Collection (self)
             let currentSourceId = null
@@ -72,8 +79,27 @@ export function makeHandleSTACObject(deps = {}) {
                     parentSourceId = currentSourceId
                 }
 
-                // save collection data with FK to its parent source (if available)
-                await upsertCollectionFn({ ...STACObject, source_id: parentSourceId })
+                  // Parse collection to extract metadata and inject source ID
+                const parsedCollection = parseCollection(STACObject, parentSourceId, new Date());
+
+                if (parsedCollection) {
+                     // Check if STAC object is newer than last crawl (Incremental Update)
+                    const sourceUpdated = STACObject.properties?.updated || STACObject.updated;
+                    let shouldUpdate = true;
+
+                    if (lastCrawled && sourceUpdated) {
+                        // Compare dates: if source is older or equal to last crawl, skip
+                        if (new Date(sourceUpdated) <= new Date(lastCrawled)) {
+                            shouldUpdate = false;
+                            loggerFn.info(`Skipping update: ${Link} not modified.`);
+                        }
+                    }
+
+                    // Only upsert if content has changed or we force it (first crawl)
+                    if (shouldUpdate) {
+                        await upsertCollectionFn(parsedCollection);
+                    }
+                }
 
                 return childs
 
@@ -202,16 +228,11 @@ export async function crawlStacApi(source) {
         //Iterate and Save
         for (const collection of collections) {
             
-            // MAPPING: We must inject the source_id!
-            const collectionToSave = {
-                ...collection,
-                source_id: source.id, // Link to the parent source
-                
-                // If bbox is missing in root, try to extract it from 'extent'
-                bbox: collection.extent?.spatial?.bbox?.[0] || collection.bbox
-            };
-
-            await upsertCollection(collectionToSave);
+            // Parse API collection to extract metadata and prepare for DB upsert
+            const parsedCollection = parseCollection(collection, source.id, new Date());
+            if (parsedCollection) {
+                await upsertCollection(parsedCollection);
+        }
         }
 
         // Mark as crawled (Update Timestamp in DB)
