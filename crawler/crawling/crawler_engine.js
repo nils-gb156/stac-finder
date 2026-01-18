@@ -8,7 +8,7 @@ import {
 } from "./queue_manager.js";
 
 import { loadUncrawledSources } from "./source_manager.js";
-import { handleSTACObject, crawlStacApi } from "./crawler_functions.js";
+import { handleSTACObject, crawlStacApi, validateQueueEntry } from "./crawler_functions.js"
 import { validateStacObject } from "../parsing/json_validator.js";
 import { logger } from "./src/config/logger.js"
 import { getSTACIndexData } from "../data_management/stac_index_client.js";
@@ -67,15 +67,27 @@ export async function startCrawler() {
     
     logger.info(`Found ${sources.length} sources to process.`);
 
+    //initialize Arrays to store uncrawled Sources before upload
+    let uncrawledTitles = []
+    let uncrawledUrls = []
+
     for (const source of sources) {
         if (source.type === 'API') {
             // Process directly, no queue needed for the collections list
             await crawlStacApi(source); //
         } else {
-            // Add to queue to start the recursive crawling loop
-            await addToQueue(source.title, source.url, null); //
+            //validate data
+            if (validateQueueEntry(source.title, source.url)) {
+
+                //add the data to the array
+                uncrawledTitles.push(source.title)
+                uncrawledUrls.push(source.url)
+            }
         }
     }
+
+    //push uncrawled sources to the queue
+    await addToQueue(uncrawledTitles, uncrawledUrls); //
 
     // Load URLs from STAC Index (fail-safe)
     try {

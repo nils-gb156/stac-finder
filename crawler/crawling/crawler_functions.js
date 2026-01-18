@@ -175,3 +175,50 @@ export async function validateQueueEntry(title, url, parentUrl = null) {
 
     return true
 }
+
+/**
+ * @param {Object} source - The source object from the database (id, url, type, title).
+ */
+export async function crawlStacApi(source) {
+    logger.info(`Starting API Crawl for: ${source.url}`);
+
+    try {
+        // Prepare URL: Append "/collections" to the base URL
+        // Remove trailing slash if present, then add /collections
+        let collectionsUrl = source.url.replace(/\/$/, "") + "/collections";
+        
+        //Fetch the Collections List
+        const response = await fetch(collectionsUrl);
+        if (!response.ok) {
+            throw new Error(`API responded with status ${response.status}`);
+        }
+        
+        const data = await response.json();
+        // APIs usually return { "collections": [...] }
+        const collections = data.collections || [];
+
+        logger.info(`Found ${collections.length} collections in API ${source.url}`);
+
+        //Iterate and Save
+        for (const collection of collections) {
+            
+            // MAPPING: We must inject the source_id!
+            const collectionToSave = {
+                ...collection,
+                source_id: source.id, // Link to the parent source
+                
+                // If bbox is missing in root, try to extract it from 'extent'
+                bbox: collection.extent?.spatial?.bbox?.[0] || collection.bbox
+            };
+
+            await upsertCollection(collectionToSave);
+        }
+
+        // Mark as crawled (Update Timestamp in DB)
+        await markSourceCrawled(source.id);
+        logger.info(`Finished API Crawl for ${source.url}`);
+
+    } catch (error) {
+        logger.error(`API Crawl failed for ${source.url}: ${error.message}`);
+    }
+}
