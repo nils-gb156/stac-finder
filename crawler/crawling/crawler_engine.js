@@ -14,7 +14,7 @@ import { logger } from "./src/config/logger.js"
 import { getSTACIndexData } from "../data_management/stac_index_client.js";
 import { isInSources } from "./source_manager.js";
 
-const CRAWL_DELAY_MS = 100; // Polite delay
+const CRAWL_DELAY_MS = 1000; // Polite delay
 const MAX_RETRIES = 3;       // Max attempts
 const RETRY_DELAY_MS = 2000; // Base backoff time
 
@@ -79,47 +79,25 @@ export async function startCrawler() {
 
     // Load URLs from STAC Index (fail-safe)
     try {
+        //initialize upload counter
+        let i = 0;
 
         //get the data from the STAC Index Database
         const STACIndexData = await getSTACIndexData();
 
-        //initialize arrays to store data
-        let titles = []
-        let urls = []
-
-        //bring the data in the format needed to add it to the queue
         for (let data of STACIndexData) {
+            //if the data was never crawled:
 
-            //validate data
-            if (validateQueueEntry(data.title, data.url)) {
-
-                //add the data to the array
-                titles.push(data.title)
-                urls.push(data.url)
+            if (isInSources(data.url)) {
+                //add the urls to the queue and add 0 or 1 to the upload counter
+                i = i + await addToQueue(data.title, data.url);
             }
         }
 
-        //make sure that the length of the arrays is equal
-        //otherwise the data could get mixed up
-        if (titles.length == urls.length) {
-
-            //add the data to the queue
-            addToQueue(titles, urls)
-
-        } else {
-            logger.error(`There are ${titles.length} titles but ${urls.length} urls you want to add to the queue.`)
-            throw err
-        }
+        logger.info(`Added ${i} URL('s) from the STAC Index Database to the queue.`)
 
     } catch (err) {
         logger.error("Could not load STAC Index data, starting with existing queue only.");
-    }
-
-    //Store the data to upload it later to the queue 
-    const urlData = {
-        titles : [],
-        urls : [],
-        parentUrls : []
     }
 
     // Continue crawling until no URLs remain in queue
@@ -140,42 +118,16 @@ export async function startCrawler() {
             // Only proceed if valid JSON was retrieved
             if (validateStacObject(STACObject).valid) {
 
-                //for Catalogs: get the child data and save the catalog data in the sources db
-                //for Collections: get the child data, save the collection data in the collections and the sources db
-                const childData = await handleSTACObject(STACObject, url, parentUrl)
-
-                for(let child of childData) {
-
-                    //validate child data
-                    if(validateQueueEntry(child.title, child.url, parentUrl)) {
-
-                        //add the child data to the urlData
-                        urlData.titles.push(child.title)
-                        urlData.urls.push(child.url)
-                        urlData.parentUrls.push(parentUrl)
-                    }
-                }
-
+                //for Catalogs: put the child urls into the queue
+                //for Collections: put the child urls into the queue, save the data in the sources/collections db
+                await handleSTACObject(STACObject, url, parentUrl)
+        
                 } else {
                     logger.warn("Warning: Invalid STAC object")
                 }
             
         } catch(err) {
             logger.warn(`Warning: Did not crawled the following url: ${url} because of the following error: ${err}`)
-        }
-
-        if (urlData.urls.length != urlData.titles.length || urlData.urls.length != urlData.parentUrls.length) {
-            logger.error(`There are ${urlData.titles.length} titles but ${urlData.urls.length} urls and 
-                ${urlData.parentUrls.length} parent urls you want to add to the queue.`)
-        }
-        if (urlData.urls.length >= 1000 || !await hasNextUrl()) {
-            //add the data to the queue
-            addToQueue(urlData.titles, urlData.urls, urlData.parentUrls)
-
-            //reset the urlData
-            urlData.titles = []
-            urlData.urls = []
-            urlData.parentUrls = []
         }
         
         // Remove processed URL from queue to avoid re-processing
