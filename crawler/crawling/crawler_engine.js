@@ -143,10 +143,8 @@ export async function startCrawler() {
             const parentUrl = entry.parent_url ?? null;
 
         try {
-            //get the json from the url
-            const res = await fetch(url)
-            const STACObject = await res.json()
-
+            // Fetch STAC JSON with retry
+            const STACObject = await fetchWithRetry(url)
             logger.info(`Crawling: ${url}`);
             
             // Only proceed if valid JSON was retrieved
@@ -223,9 +221,8 @@ export async function continueCrawlingProcess() {
             const parentUrl = entry.parent_url ?? null;
 
         try {
-            //get the json from the url
-            const res = await fetch(url)
-            const STACObject = await res.json()
+            // Fetch STAC JSON with retry
+            const STACObject = await fetchWithRetry(url)
 
             logger.info(`Crawling: ${url}`);
             
