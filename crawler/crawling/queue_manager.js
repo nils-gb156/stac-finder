@@ -7,8 +7,32 @@
 import { logger } from "./src/config/logger.js"
 import { query } from "./src/data/db_client.js"
 import { loadUncrawledSources } from "./source_manager.js"
+import fs from "fs"
 
 //functions
+
+//Store the data to upload it later to the queue
+//Store it outside of the startCrawler Function to save it in a file if the crawling process stops
+export const urlData = {
+    titles : [],
+    urls : [],
+    parentUrls : []
+}
+
+export function resetUrlData() {
+    urlData.titles = []
+    urlData.urls = []
+    urlData.parentUrls = [] 
+}
+
+export function saveInBackup() {
+
+    if (urlData.urls.length > 0) {
+        fs.writeFileSync("../src/data/backupCopy.json", JSON.stringify(urlData))
+    }
+
+    logger.info("The crawling process has been stopped. The data that had not yet been uploaded to the database has been saved in a backup file.")
+}
 
 /**
  * Adds a URL to the queue if not already present.
