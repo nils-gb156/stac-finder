@@ -67,7 +67,7 @@ The current `docker-compose.yml` is already configured for development (no need 
     volumes: # all volumes are required
       - ./api:/app/api 
       - /app/api/node_modules 
-      - ./public:/app/public 
+      - ./docs:/app/docs
       - ./api/logs:/app/api/logs
     command: npm run dev # npm run dev for development
 
