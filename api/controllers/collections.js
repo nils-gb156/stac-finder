@@ -31,18 +31,20 @@ const getCollections = async (req, res) => {
     }
 
     // --- CQL2 filter (filter=...) ---
-    if (req.query.filter) {
-      try {
-        const ast = parseCql2(req.query.filter);
-        const cqlWhere = astToSql(ast, queryableMap, queryParams); // appends params into queryParams
-        whereParts.push(`(${cqlWhere})`);
-      } catch (e) {
-        return res.status(400).json({
-          error: 'Invalid CQL2 filter',
-          message: e.message
-        });
-      }
+    const { whereClause: cqlWhere, error: cqlError } = parseCql2Filter(
+      req.query.filter,
+      req.query['filter-lang'],
+      queryParams
+    );
+
+    if (cqlError) {
+      return res.status(cqlError.status).json({ error: cqlError.error, message: cqlError.message });
     }
+
+    if (cqlWhere) {
+      whereParts.push(`(${cqlWhere})`);
+    }
+
 
       // --- Datetime filter (datetime=...) ---
       const { whereClause: datetimeWhere, params: datetimeParams, error: datetimeError } = parseDatetimeFilter(req.query.datetime);
