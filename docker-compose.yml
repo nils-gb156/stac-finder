@@ -13,22 +13,42 @@ services:
       - "5050:80"
     volumes:
       - pgadmin_data:/var/lib/pgadmin
-    
+
+  # Backend API 
   api:
     container_name: stac-api
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
     ports:
       - "4000:3000"
     env_file:
       - ./api/.env
-    environment:
-      - NODE_ENV=development
     volumes:
-      - ./api:/app/api
-      - /app/api/node_modules
-      - ./web-ui:/app/web-ui
+      - ./api:/app/api # delete for production 
+      - /app/api/node_modules # delete for production 
+      - ./public:/app/public # delete for production 
       - ./api/logs:/app/api/logs
     command: npm run dev # use npm start for production
+
+  # Frontend STAC Browser 
+  web-ui:
+    container_name: stacfinder-web-ui
+    build:
+      context: ./web-ui
+      dockerfile: Dockerfile
+      target: development #delete for production 
+      args:
+        - DYNAMIC_CONFIG=true
+        - historyMode=history
+        - pathPrefix=/
+    ports:
+      - "8080:8080"
+    volumes: # delete volumes for production 
+      - ./web-ui:/app 
+      - /app/node_modules
+    depends_on:
+      - api
 
 volumes:
   pgadmin_data:
