@@ -4,7 +4,9 @@ import {
     getNextUrlFromDB,
     hasNextUrl,
     removeFromQueue,
-    addToQueue
+    addToQueue,
+    resetUrlData,
+    urlData
 } from "./queue_manager.js";
 
 import { loadUncrawledSources } from "./source_manager.js";
@@ -13,6 +15,7 @@ import { validateStacObject } from "../parsing/json_validator.js";
 import { logger } from "./src/config/logger.js"
 import { getSTACIndexData } from "../data_management/stac_index_client.js";
 import { isInSources } from "./source_manager.js";
+import fs from "fs"
 
 const CRAWL_DELAY_MS = 100; // Polite delay
 const MAX_RETRIES = 3;       // Max attempts
@@ -61,15 +64,45 @@ async function fetchWithRetry(url, maxRetries = MAX_RETRIES) {
 export async function startCrawler() {
 
     logger.info("Crawler started");
- 
+
+    //if there is any backup data
+    if (fs.existsSync('../src/data/backupCopy.json')) {
+        //get the backupData
+        let queueBackupCopy = JSON.parse(fs.readFileSync('../src/data/backupCopy.json'))
+
+        logger.info(`Found ${queueBackupCopy.urls.length} URL's in the backup file.`)
+
+        //Remove the backup file
+        fs.unlinkSync('../src/data/backupCopy.json')
+
+        logger.info("Removed the backup file")
+
+        //validate the backup data
+        for (let i = queueBackupCopy.urls.length - 1; i >= 0; i--) {
+            const title = queueBackupCopy.titles[i]
+            const url = queueBackupCopy.urls[i]
+            const parentUrl = queueBackupCopy.parentUrls[i] ?? null
+
+            //if there is invalid data, remove it from the queue backup copy 
+            if (!validateQueueEntry(title, url, parentUrl)) {
+                queueBackupCopy.titles.splice(i, 1)
+                queueBackupCopy.urls.splice(i, 1)
+                queueBackupCopy.parentUrls.splice(i, 1)
+
+                console.log("removed one invalid URL")
+            }
+        }
+
+        addToQueue(queueBackupCopy.titles, queueBackupCopy.urls, queueBackupCopy.parentUrls)
+    }
+
+    //reset the url Data
+    resetUrlData()
+
     // we now load sources manually to check their type.
     const sources = await loadUncrawledSources(); //
     
     logger.info(`Found ${sources.length} sources to process.`);
-
-    //initialize Arrays to store uncrawled Sources before upload
-    let uncrawledTitles = []
-    let uncrawledUrls = []
 
     for (const source of sources) {
         if (source.type === 'API') {
@@ -80,24 +113,31 @@ export async function startCrawler() {
             if (validateQueueEntry(source.title, source.url)) {
 
                 //add the data to the array
-                uncrawledTitles.push(source.title)
-                uncrawledUrls.push(source.url)
+                urlData.titles.push(source.title)
+                urlData.urls.push(source.url)
             }
         }
     }
 
-    //push uncrawled sources to the queue
-    await addToQueue(uncrawledTitles, uncrawledUrls); //
+    //make sure that the length of the arrays is equal
+    //otherwise the data could get mixed up
+    if (urlData.titles.length == urlData.urls.length) {
+
+        //push uncrawled sources to the queue
+        await addToQueue(urlData.titles, urlData.urls); //
+
+    } else {
+        logger.error(`There are ${urlData.titles.length} titles but ${urlData.urls.length} urls you want to add to the queue.`)
+        throw err
+    }
+
+    resetUrlData()
 
     // Load URLs from STAC Index (fail-safe)
     try {
 
         //get the data from the STAC Index Database
         const STACIndexData = await getSTACIndexData();
-
-        //initialize arrays to store data
-        let titles = []
-        let urls = []
 
         //bring the data in the format needed to add it to the queue
         for (let data of STACIndexData) {
@@ -106,32 +146,28 @@ export async function startCrawler() {
             if (validateQueueEntry(data.title, data.url)) {
 
                 //add the data to the array
-                titles.push(data.title)
-                urls.push(data.url)
+                urlData.titles.push(data.title)
+                urlData.urls.push(data.url)
+                urlData.parentUrls.push(null)
             }
         }
 
         //make sure that the length of the arrays is equal
         //otherwise the data could get mixed up
-        if (titles.length == urls.length) {
+        if (urlData.titles.length == urlData.urls.length) {
 
             //add the data to the queue
-            addToQueue(titles, urls)
+            await addToQueue(urlData.titles, urlData.urls)
 
         } else {
-            logger.error(`There are ${titles.length} titles but ${urls.length} urls you want to add to the queue.`)
+            logger.error(`There are ${urlData.titles.length} titles but ${urlData.urls.length} urls you want to add to the queue.`)
             throw err
         }
 
+        resetUrlData()
+
     } catch (err) {
         logger.error("Could not load STAC Index data, starting with existing queue only.");
-    }
-
-    //Store the data to upload it later to the queue 
-    const urlData = {
-        titles : [],
-        urls : [],
-        parentUrls : []
     }
 
     // Continue crawling until no URLs remain in queue
@@ -183,9 +219,7 @@ export async function startCrawler() {
             addToQueue(urlData.titles, urlData.urls, urlData.parentUrls)
 
             //reset the urlData
-            urlData.titles = []
-            urlData.urls = []
-            urlData.parentUrls = []
+            resetUrlData()
         }
         
         // Remove processed URL from queue to avoid re-processing
