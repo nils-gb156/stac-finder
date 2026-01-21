@@ -145,8 +145,10 @@ The current `docker-compose.yml` is configured for **Development**. For producti
         - DYNAMIC_CONFIG=true
         - historyMode=history
         - pathPrefix=/
-    ports:
+   ports:
       - "8080:8080"
+   environment:
+      - VUE_APP_API_URL=http://api:3000 
     # PRODUCTION: Remove volumes
     depends_on:
       - api
@@ -215,7 +217,7 @@ The main repository only stores a reference (commit hash) to the submodule, not 
 ### Initialize submodules
 ```bash
 # Option 1: Clone repository and initialize submodules in one command
-git clone --recurse-submodules <https://github.com/GeoStack-Solutions/stac-finder.git>
+git clone --recurse-submodules https://github.com/GeoStack-Solutions/stac-finder.git
 
 # Option 2: If already cloned, then initialize submodules
 git submodule update --init --recursive
