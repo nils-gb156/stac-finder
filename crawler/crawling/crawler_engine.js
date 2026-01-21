@@ -16,6 +16,13 @@ import { logger } from "./src/config/logger.js"
 import { getSTACIndexData } from "../data_management/stac_index_client.js";
 import { isInSources } from "./source_manager.js";
 import fs from "fs"
+import path from "path"
+import { fileURLToPath } from "url"
+
+// Resolve backup file path relative to this module
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
+const backupFilePath = path.resolve(__dirname, "./src/data/backupCopy.json")
 
 const CRAWL_DELAY_MS = 100; // Polite delay
 const MAX_RETRIES = 3;       // Max attempts
@@ -66,14 +73,14 @@ export async function startCrawler() {
     logger.info("Crawler started");
 
     //if there is any backup data
-    if (fs.existsSync('../src/data/backupCopy.json')) {
+    if (fs.existsSync(backupFilePath)) {
         //get the backupData
-        let queueBackupCopy = JSON.parse(fs.readFileSync('../src/data/backupCopy.json'))
+        let queueBackupCopy = JSON.parse(fs.readFileSync(backupFilePath))
 
         logger.info(`Found ${queueBackupCopy.urls.length} URL's in the backup file.`)
 
         //Remove the backup file
-        fs.unlinkSync('../src/data/backupCopy.json')
+        fs.unlinkSync(backupFilePath)
 
         logger.info("Removed the backup file")
 
@@ -115,6 +122,7 @@ export async function startCrawler() {
                 //add the data to the array
                 urlData.titles.push(source.title)
                 urlData.urls.push(source.url)
+                urlData.parentUrls.push(null)
             }
         }
     }
@@ -124,7 +132,7 @@ export async function startCrawler() {
     if (urlData.titles.length == urlData.urls.length) {
 
         //push uncrawled sources to the queue
-        await addToQueue(urlData.titles, urlData.urls); //
+        await addToQueue(urlData.titles, urlData.urls, urlData.parentUrls); //
 
     } else {
         logger.error(`There are ${urlData.titles.length} titles but ${urlData.urls.length} urls you want to add to the queue.`)
@@ -151,13 +159,25 @@ export async function startCrawler() {
                 urlData.parentUrls.push(null)
             }
         }
+        
+        //if the data is already in sources, remove it
+        for (let i = urlData.urls.length - 1; i >= 0; i--) {
+            const url = urlData.urls[i]
+
+            //if there is invalid data, remove it from the queue backup copy 
+            if (await isInSources(url)) {
+                urlData.titles.splice(i, 1)
+                urlData.urls.splice(i, 1)
+                urlData.parentUrls.splice(i, 1)
+            }
+        }
 
         //make sure that the length of the arrays is equal
         //otherwise the data could get mixed up
         if (urlData.titles.length == urlData.urls.length) {
 
             //add the data to the queue
-            await addToQueue(urlData.titles, urlData.urls)
+            await addToQueue(urlData.titles, urlData.urls, urlData.parentUrls)
 
         } else {
             logger.error(`There are ${urlData.titles.length} titles but ${urlData.urls.length} urls you want to add to the queue.`)
@@ -193,12 +213,12 @@ export async function startCrawler() {
                 for(let child of childData) {
 
                     //validate child data
-                    if(validateQueueEntry(child.title, child.url, parentUrl)) {
+                    if(validateQueueEntry(child.title, child.url, url)) {
 
                         //add the child data to the urlData
                         urlData.titles.push(child.title)
                         urlData.urls.push(child.url)
-                        urlData.parentUrls.push(parentUrl)
+                        urlData.parentUrls.push(url)
                     }
                 }
 
@@ -214,9 +234,12 @@ export async function startCrawler() {
             logger.error(`There are ${urlData.titles.length} titles but ${urlData.urls.length} urls and 
                 ${urlData.parentUrls.length} parent urls you want to add to the queue.`)
         }
+        
+        console.log(urlData.urls.length)
         if (urlData.urls.length >= 1000 || !await hasNextUrl()) {
+
             //add the data to the queue
-            addToQueue(urlData.titles, urlData.urls, urlData.parentUrls)
+            await addToQueue(urlData.titles, urlData.urls, urlData.parentUrls)
 
             //reset the urlData
             resetUrlData()
