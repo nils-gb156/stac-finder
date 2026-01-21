@@ -8,6 +8,13 @@ import { logger } from "./src/config/logger.js"
 import { query } from "./src/data/db_client.js"
 import { loadUncrawledSources } from "./source_manager.js"
 import fs from "fs"
+import path from "path"
+import { fileURLToPath } from "url"
+
+// Resolve backup file path relative to this module
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
+const backupFilePath = path.resolve(__dirname, "./src/data/backupCopy.json")
 
 //functions
 
@@ -28,7 +35,8 @@ export function resetUrlData() {
 export function saveInBackup() {
 
     if (urlData.urls.length > 0) {
-        fs.writeFileSync("../src/data/backupCopy.json", JSON.stringify(urlData))
+        fs.mkdirSync(path.dirname(backupFilePath), { recursive: true })
+        fs.writeFileSync(backupFilePath, JSON.stringify(urlData))
     }
 
     logger.info("The crawling process has been stopped. The data that had not yet been uploaded to the database has been saved in a backup file.")
