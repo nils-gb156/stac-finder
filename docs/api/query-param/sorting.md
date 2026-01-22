@@ -21,6 +21,8 @@ Sorts collections based on one or more fields with optional direction prefix.
 - `title` - Collection title
 - `description` - Collection description
 - `license` - Collection license
+- `temporal_start` - Start date of temporal extent
+- `temporal_end` - End date of temporal extent
 
 **Direction:**
 - `+` or no prefix - Ascending (A-Z, 0-9)
@@ -113,7 +115,7 @@ The API returns detailed error messages for invalid sort parameters:
 ```json
 {
   "error": "Invalid sortby parameter",
-  "message": "Field must be one of: id, title, description, license. Format: sortby=field, sortby=+field (ascending), or sortby=-field (descending)"
+  "message": "Field must be one of: id, title, description, license, temporal_start, temporal_end. Format: sortby=field, sortby=+field (ascending), or sortby=-field (descending)"
 }
 ```
 
