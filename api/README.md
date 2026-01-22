@@ -46,7 +46,7 @@ GET /collections?sortby=+title,-id     # Sort by title ascending, then id descen
 #### Pagination (`limit` and `token`)
 
 - **`limit`**: Maximum number of collections to return per page
-  - **Default**: 10
+  - **Default**: 9
   - **Maximum**: 10000
   - **Format**: Positive integer
 
