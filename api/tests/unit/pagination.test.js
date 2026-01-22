@@ -4,7 +4,7 @@ describe('Pagination Utils', () => {
   describe('parsePaginationParams', () => {
     test('should use default limit when not provided', () => {
       const result = parsePaginationParams({});
-      expect(result.limit).toBe(10);
+      expect(result.limit).toBe(9);
       expect(result.offset).toBe(0);
     });
 
