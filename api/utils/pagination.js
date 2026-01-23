@@ -5,7 +5,7 @@
  * @param {number} maxLimit - Maximum allowed limit value
  * @returns {Object} { limit: number, offset: number, error: Object|null }
  */
-const parsePaginationParams = (query, defaultLimit = 10, maxLimit = 10000) => {
+const parsePaginationParams = (query, defaultLimit = 9, maxLimit = 10000) => {
     const token = query.token;
     
     // Parse limit - only use default if not provided at all

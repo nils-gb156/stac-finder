@@ -116,7 +116,7 @@ Logged at `error` level with full stacktrace:
   "ip": "127.0.0.1",
   "userAgent": "curl/7.68.0",
   "query": {
-    "limit": "10",
+    "limit": "9",
     "sortby": "title"
   },
   "body": {},
