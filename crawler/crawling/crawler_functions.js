@@ -6,6 +6,54 @@ import { logger } from "./src/config/logger.js"
 import { markSourceCrawled } from "./source_manager.js"
 import { parseCollection } from "../parsing/parser_functions.js"
 
+
+const MAX_RETRIES = 3;       // Max attempts
+const RETRY_DELAY_MS = 2000; // Base backoff time
+
+/**
+ * Retry-aware fetch:
+ * - 15s timeout per request
+ * - aborts fast on fatal 4xx (except 429) and 504 Gateway Timeout
+ * - retries: Network errors, 5xx Server Errors, and 429 (Rate Limit) with linear backoff
+ * - returns parsed JSON on success
+ */
+export async function fetchWithRetry(url, maxRetries = MAX_RETRIES) {
+    const TIMEOUT_MS = 15000; // 15s Timeout
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
+
+        try {
+            logger.info(`Fetching ${url} (attempt ${attempt}/${maxRetries})`);
+            const response = await fetch(url, { signal: controller.signal });
+            clearTimeout(timeoutId);
+
+            const status = response.status;
+            if (response.ok) return await response.json();
+
+            if (status === 504) {
+                throw new Error(`Fatal Server Error ${status}: Gateway Time-out - Will not retry.`);
+            }
+
+            if (status >= 400 && status < 500 && status !== 429) {
+                throw new Error(`Fatal Client Error ${status}: ${response.statusText} - Will not retry.`);
+            }
+            throw new Error(`Request failed with status ${status}: ${response.statusText}`);
+        } catch (error) {
+            clearTimeout(timeoutId);
+            if (error.name === 'AbortError') {
+                throw new Error("Fatal: Timeout of 15s reached - Will not retry to save time.");
+            }
+            if (error.message.includes("Fatal")) throw error;
+            logger.warn(`Attempt ${attempt} failed for ${url}: ${error.message}`);
+            if (attempt === maxRetries) throw new Error(`Failed after ${maxRetries} attempts: ${error.message}`);
+            const delay = RETRY_DELAY_MS * attempt;
+            logger.info(`Waiting ${delay}ms before next retry...`);
+            await new Promise((resolve) => setTimeout(resolve, delay));
+        }
+    }
+}
+
 //helping functions for the crawler engine
 
 /**
@@ -213,13 +261,9 @@ export async function crawlStacApi(source) {
         // Remove trailing slash if present, then add /collections
         let collectionsUrl = source.url.replace(/\/$/, "") + "/collections";
         
-        //Fetch the Collections List
-        const response = await fetch(collectionsUrl);
-        if (!response.ok) {
-            throw new Error(`API responded with status ${response.status}`);
-        }
-        
-        const data = await response.json();
+        //Fetch the Collections list with Retry
+        const data = await fetchWithRetry(collectionsUrl);
+
         // APIs usually return { "collections": [...] }
         const collections = data.collections || [];
 
