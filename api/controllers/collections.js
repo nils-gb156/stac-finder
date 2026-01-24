@@ -206,11 +206,12 @@ const getCollectionById = async (req, res) => {
             providers: row.providers && Array.isArray(row.providers) ? row.providers : [],
             
             summaries: {
-                doi: row.doi,
-                platform: row.platform_summary,
-                constellation: row.constellation_summary,
-                gsd: row.gsd_summary,
-                'processing:level': row.processing_level_summary
+              // Omit doi when not present; coerce single values to arrays per STAC spec
+              ...(row.doi ? { doi: Array.isArray(row.doi) ? row.doi : [row.doi] } : {}),
+              ...(row.platform_summary ? { platform: Array.isArray(row.platform_summary) ? row.platform_summary : [row.platform_summary] } : {}),
+              ...(row.constellation_summary ? { constellation: Array.isArray(row.constellation_summary) ? row.constellation_summary : [row.constellation_summary] } : {}),
+              ...(row.gsd_summary ? { gsd: Array.isArray(row.gsd_summary) ? row.gsd_summary : [row.gsd_summary] } : {}),
+              ...(row.processing_level_summary ? { 'processing:level': Array.isArray(row.processing_level_summary) ? row.processing_level_summary : [row.processing_level_summary] } : {})
             },
 
             links: [
