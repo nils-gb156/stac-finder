@@ -18,6 +18,7 @@
 
 ### Development & Operations
 - [Logging and Error Handling](api/logging.md)
+- [Validation](api/validation.md)
 
 ## Crawler Documentation
 
