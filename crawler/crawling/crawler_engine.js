@@ -96,7 +96,7 @@ export async function startCrawler() {
                 queueBackupCopy.urls.splice(i, 1)
                 queueBackupCopy.parentUrls.splice(i, 1)
 
-                console.log("removed one invalid URL")
+                logger.info("removed one invalid URL")
             }
         }
 
@@ -179,6 +179,8 @@ export async function startCrawler() {
             //add the data to the queue
             await addToQueue(urlData.titles, urlData.urls, urlData.parentUrls)
 
+            logger.info("Added URL's from the STAC Index Database to the queue")
+
         } else {
             logger.error(`There are ${urlData.titles.length} titles but ${urlData.urls.length} urls you want to add to the queue.`)
             throw err
@@ -235,7 +237,6 @@ export async function startCrawler() {
                 ${urlData.parentUrls.length} parent urls you want to add to the queue.`)
         }
         
-        console.log(urlData.urls.length)
         if (urlData.urls.length >= 1000 || !await hasNextUrl()) {
 
             //add the data to the queue
