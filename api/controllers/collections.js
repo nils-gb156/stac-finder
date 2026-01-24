@@ -145,7 +145,7 @@ const getCollections = async (req, res) => {
         },
         license: row.license,
         keywords: row.keywords,
-        providers: row.providers?.map((name) => ({ name })),
+        providers: row.providers && Array.isArray(row.providers) ? row.providers : [],
         links: [{ rel: 'self', href: `/collections/${row.id}`, type: 'application/json' }]
       };
     });
@@ -203,7 +203,7 @@ const getCollectionById = async (req, res) => {
             },
             license: row.license,
             keywords: row.keywords,
-            providers: row.providers?.map(name => ({ name })),
+            providers: row.providers && Array.isArray(row.providers) ? row.providers : [],
             
             summaries: {
                 doi: row.doi,
