@@ -66,10 +66,11 @@ The StartCrawler function controlls the crawling process. If the crawling proces
 
 Here is how the StartCrawler function works:
 
-    If a backup file exists, the crawler validates the data and adds it to the queue if its valid. The backup file is then deleted.
-
+    If a backup file exists, the crawler validates the data and adds it to the queue if its valid.
+    The backup file is then deleted.
+ 
     Uncrawled sources are also added to the queue if they are valid.
-
+ 
     The crawler loads valid URL's from the STAC Index database tointo the queue if they are not already in the sources database.
     
     The crawling process continues until the queue is empty.
@@ -77,17 +78,19 @@ Here is how the StartCrawler function works:
         The crawler retrieves the next URL from the queue table.
         
         The crawler feches the STAC JSON using a retry mechanism and validates it.
-
+ 
             If the STAC Object is a catalog, the crawler gets the child data and stores the catalog data in the sources database.
-
-            If the STAC Object is a collection, the crawler gets the child data and stores the collection data in the sources database and the collections database.
+ 
+            If the STAC Object is a collection, the crawler gets the child data and stores the collection data 
+            in the sources database and the collections database.
                 
             The crawler then validates the child data and, if valid, adds it to an urlData-Object. 
-
-            If an error occurs during this process, the url will not be crawled, and the error is displayed.
-
-        If the urlData object contains more than 1000 URLs or if the queue is empty, the data will be uploaded to the queue. The urlData-Object is then reset.
-
+ 
+            If an error occurs during this process, the url will not be crawled and the error is displayed.
+ 
+        If the urlData object contains more than 1000 URLs or if the queue is empty, the data will be uploaded to the queue.
+        The urlData-Object is then reset.
+ 
         The processed URL gets removed from the queue to avoid recrawling.
-
+ 
     Once the queue is empty, the crawling process is complete.
