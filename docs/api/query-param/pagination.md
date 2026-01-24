@@ -80,7 +80,7 @@ The API returns a response with `links` array containing pagination links:
 ```bash
 curl "/collections"
 ```
-Returns the first 10 collections (default limit).
+Returns the first 9 collections (default limit).
 
 ### Example 2: Get first page with custom limit
 ```bash

@@ -261,23 +261,19 @@ git push
 ```
 **In VS Code:** The submodule shows separately in Source Control. Commit and push the submodule first, then commit and push the main repository.
 
-## API Usage
+## API
 
-The STAC API is accessible at `http://localhost:4000` and provides endpoints for browsing collections and searching geospatial data.
+The STAC API is accessible at `http://localhost:4000` and provides STAC 1.0.0 compliant endpoints for browsing collections and searching geospatial data.
 
 **Main Endpoints:**
-- `GET /collections` - List all STAC collections with filtering, sorting and pagination
-- `GET /collections/{id}` - Get detailed information about a specific collection
+- `GET /` - Landing page
+- `GET /collections` - List all collections (with filtering, sorting, pagination)
+- `GET /collections/{id}` - Get collection details
+- `GET /health` - Health check
 
-**Features:**
-- STAC 1.0.0 compliant responses
-- Pagination with configurable limits
-- Sorting by multiple fields
-- Input validation and SQL injection protection
-
-**For detailed API documentation, parameters, and examples:**
-- [API Documentation](api/README.md) - Complete API reference with all endpoints and parameters
-- [Database Documentation](docs/database/) - Database schema and access guides
+**For detailed documentation:**
+- [API Documentation](api/README.md)
+- [Query Parameters](docs/api/query-param/)
 
 ## Crawler
 The Crawler collects infromation of all the collections in the STAC Index Database and saves these informations in a database so that you can browse through these collections on our STACFinder Website.

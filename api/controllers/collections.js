@@ -89,7 +89,7 @@ const getCollections = async (req, res) => {
     }
 
     // --- Sorting ---
-    const allowedColumns = ['id', 'title', 'description', 'license'];
+    const allowedColumns = ['id', 'title', 'description', 'license', 'temporal_start', 'temporal_end'];
     const { orderByClauses, error: sortError } = parseSortby(req.query.sortby, allowedColumns);
     if (sortError) {
       return res.status(sortError.status).json({
