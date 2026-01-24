@@ -276,20 +276,37 @@ The STAC API is accessible at `http://localhost:4000` and provides STAC 1.0.0 co
 - [Query Parameters](docs/api/query-param/)
 
 ## Crawler
+The Crawler collects infromation of all the collections in the STAC Index Database and saves these informations in a database so that you can browse through these collections on our STACFinder Website.
 
 ### Usage
-The Crawler runs in node js.
+<!-- To start the crawling process, start the docker container 'pgadmin' first and make sure that you have a working connection to our STACFINDER database. For more informations look at the [Database Documentation](docs/database/database-access.md).  -->
 
-*For Now, we will change it later:* To start the crawling process, start the docker and make sure that you have a working connection to the Database. Then create a temporal js file in the folder crawler\crawling\tests with the following code:
-
+The crawler runs on our STACFinder Server. 
+To controll the crawler, open your terminal and get a connection to the server by typing:
 ```bash
-import { startCrawler } from "../crawler_engine.js";
-
-await startCrawler()
+ssh stac-finder@finder.stacindex.org
 ```
+Enter the given password for the server.
+Then, navigate to the folder "crawler\" and make sure that all dependencies are installed. You will find more information about this in the [Crawler Documentation](/docs/crawler/crawler-documentation.md). 
 
-TODO: Crawling start, wie er im finalen Prozess sein wird beschreiben
+TODO: Server Zugang beschreiben???
 
-Details about the crawling process will be shown in the terminal.
+*Start the crawling process for the first time:*
+```bash
+pm2 start entrypoint.js
+```
+*Stop the crawling process:*
+```bash
+pm2 stop entrypoint.js
+```
+*Restart the crawling process:*
+```bash
+pm2 restart entrypoint.js
+```
+*To get informations about the crawling process:*
+```bash
+pm2 logs
+```
+Details about the crawling process will then be shown in the terminal.
 
 **For more information:** [Crawler Documentation](/docs/crawler/crawler-documentation.md)
