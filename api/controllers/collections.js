@@ -134,6 +134,8 @@ const getCollections = async (req, res) => {
       }
 
       return {
+        stac_version: '1.0.0',
+        type: 'Collection',
         id: row.id.toString(),
         title: row.title,
         description: row.description,
