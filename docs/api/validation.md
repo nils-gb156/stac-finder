@@ -16,9 +16,6 @@ npm run validate -- <url>
 # Validate landing page
 npm run validate -- http://localhost:4000/
 
-# Validate conformance
-npm run validate -- http://localhost:4000/conformance
-
 # Validate collections list
 npm run validate -- http://localhost:4000/collections
 
