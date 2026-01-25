@@ -4,8 +4,9 @@
  */
 
 //imports
-import { logger } from './src/config/logger.js'
-import { query } from './src/data/db_client.js'
+import { logger } from '../logging/logger.js'
+import { query } from '../data_management/db_client.js'
+import { validateSource } from '../validation/source_validator.js'
 
 //functions
 
@@ -37,27 +38,6 @@ export async function loadSources() {
 }
 
 /**
- * Retrieve a single source record by ID.
- * 
- * @function getSource
- * @param {number} id - The ID of the source to load.
- * @returns {Promised<Object|null>} The source record or null if not found.
- */
-export async function getSource(id) {
-    try {
-        const result = await query(
-            `SELECT * FROM stac.sources WHERE id = $1 LIMIT 1;`,
-            [id]
-        )
-
-        return result.rows[0] || null
-    } catch (error) {
-        logger.error(`Error loading source ${id}: ${error.message}`)
-        throw error
-    }
-}
-
-/**
  * Mark a source as successfully crawled by updating its timestamp.
  * 
  * @function markSourceCrawled
@@ -83,48 +63,26 @@ export async function markSourceCrawled(id) {
 }
 
 /**
- * Load only sources that appear valid (URL + type present).
- * 
- * @function loadActiveSources
- * @returns {Promise<Array<Object>>} Filtered sources that are crawlable.
- */
-export async function loadActiveSources() {
-    const sources = await loadSources()
-
-    return sources.filter(validateSource)
-}
-
-/**
  * Load sources that have never been crawled.
  *
  * @function loadUncrawledSources
  * @returns {Promise<Array<Object>>} Sources whose lastCrawled field is null.
  */
 export async function loadUncrawledSources() {
-  const sources = await loadSources()
+  const sources = await loadValidSources()
   return sources.filter(src => !src.last_crawled_timestamp)
 }
 
 /**
- * Validate whether a source record contains a valid URL + type.
- *
- * @function validateSource
- * @param {Object} source - Source object.
- * @param {string} source.url - The URL to validate.
- * @param {string} source.type - The crawler-type of the source.
- * @returns {boolean} True if valid, otherwise false.
+ * Load only sources that appear valid (URL + type present).
+ * 
+ * @function loadValidSources
+ * @returns {Promise<Array<Object>>} Filtered sources that are crawlable.
  */
-export function validateSource(source) {
-    if (!source.url) return false
-    if (!source.type) return false
+export async function loadValidSources() {
+    const sources = await loadSources()
 
-    try {
-        new URL(source.url) // throws on invalid URLs
-    } catch {
-        return false
-    }
-
-    return true
+    return sources.filter(validateSource)
 }
 
 /**

@@ -1,6 +1,6 @@
 //imports
-import { query } from "../crawling/src/data/db_client.js"
-import { logger } from "../crawling/src/config/logger.js"
+import { query } from "./db_client.js"
+import { logger } from "../logging/logger.js"
 
 /**
  * @function getSTACIndexData
