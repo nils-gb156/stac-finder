@@ -138,6 +138,8 @@ const getCollections = async (req, res) => {
       }
 
       return {
+        stac_version: '1.0.0',
+        type: 'Collection',
         id: row.id.toString(),
         title: row.title,
         description: row.description,
@@ -147,7 +149,7 @@ const getCollections = async (req, res) => {
         },
         license: row.license,
         keywords: row.keywords,
-        providers: row.providers?.map((name) => ({ name })),
+        providers: row.providers && Array.isArray(row.providers) ? row.providers : [],
         links: [
           { rel: 'self', href: `/collections/${row.id}`, type: 'application/json' },
           ...(row.source_url
@@ -216,14 +218,15 @@ const getCollectionById = async (req, res) => {
             },
             license: row.license,
             keywords: row.keywords,
-            providers: row.providers?.map(name => ({ name })),
+            providers: row.providers && Array.isArray(row.providers) ? row.providers : [],
             
             summaries: {
-                doi: row.doi,
-                platform: row.platform_summary,
-                constellation: row.constellation_summary,
-                gsd: row.gsd_summary,
-                'processing:level': row.processing_level_summary
+              // Omit doi when not present; coerce single values to arrays per STAC spec
+              ...(row.doi ? { doi: Array.isArray(row.doi) ? row.doi : [row.doi] } : {}),
+              ...(row.platform_summary ? { platform: Array.isArray(row.platform_summary) ? row.platform_summary : [row.platform_summary] } : {}),
+              ...(row.constellation_summary ? { constellation: Array.isArray(row.constellation_summary) ? row.constellation_summary : [row.constellation_summary] } : {}),
+              ...(row.gsd_summary ? { gsd: Array.isArray(row.gsd_summary) ? row.gsd_summary : [row.gsd_summary] } : {}),
+              ...(row.processing_level_summary ? { 'processing:level': Array.isArray(row.processing_level_summary) ? row.processing_level_summary : [row.processing_level_summary] } : {})
             },
 
           links: [
