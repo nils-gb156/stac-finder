@@ -1,10 +1,10 @@
 //imports
 import { getSourceIdByUrl, upsertCollection, upsertSource, getLastCrawledTimestamp  } from "../data_management/db_writer.js"
-import { validateStacObject } from "../parsing/json_validator.js"
-import { addToQueue } from "./queue_manager.js"
-import { logger } from "./src/config/logger.js"
-import { markSourceCrawled } from "./source_manager.js"
-import { parseCollection } from "../parsing/parser_functions.js"
+import { validateStacObject } from "../validation/json_validator.js"
+import { addToQueue } from "../queueManager/queue_manager.js"
+import { logger } from "../logging/logger.js"
+import { markSourceCrawled } from "../sourceManager/source_manager.js"
+import { parseCollection } from "../handleCollections/CollectionParser.js"
 
 
 const MAX_RETRIES = 3;       // Max attempts
@@ -206,47 +206,6 @@ export function getChildURLs(STACObject, Link) {
     }
 
     return(childURLs)
-}
-
-/**
- * @function validateQueueEntry
- * validates a queue entry to make sure that only valid objects will be crawled
- * @param {string} title - title of a stac object
- * @param {string} url - url of a stac object
- * @param {string} parentUrl - parent url of a stac object
- * @returns true if everything is ok
- *          false if there is any Problem with the source
- */
-export async function validateQueueEntry(title, url, parentUrl = null) {
-    
-    // validate URL format
-    try {
-        new URL(url)
-    } catch {
-        logger.warn(`Did not added the following invalid URL to the queue: ${url}`)
-        //return false
-        return false
-    }
-
-    // validate title
-    if (typeof title !== "string") {
-        logger.warn(`Did not added the following invalid entry with the title: ${title}`)
-        //return false
-        return false
-    }
-
-    // validate parentUrl 
-    if (parentUrl != null) {
-        try {
-            new URL(parentUrl)
-        } catch {
-            logger.warn(`Did not add the following invalid parent URL to the queue: ${parentUrl}`)
-            //return false
-            return false
-        }
-    }
-
-    return true
 }
 
 /**

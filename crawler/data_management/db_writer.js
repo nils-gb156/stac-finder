@@ -1,4 +1,4 @@
-import { pool } from '../crawling/src/data/db_client.js'; 
+import { pool } from './db_client.js'; 
 
 // Convert any value to PostgreSQL TEXT[] array, handling nulls and type conversion
 const toTextArray = (v) =>
