@@ -152,9 +152,8 @@ export function makeHandleSTACObject(deps = {}) {
                 return childs
 
             } else {
-
-                //TODO: Hier warning?
-                return null
+                //Return empty array if the STAC Object is not a catalog or a collection
+                return []
             }
         } else {
             loggerFn.warn("Warning: Invalid STAC object")
