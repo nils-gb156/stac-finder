@@ -10,9 +10,13 @@ const queryableMap = require('../utils/queryableMap');
 const getCollections = async (req, res) => {
   try {
     let sql =
-      'SELECT id, title, description, keywords, license, temporal_start, temporal_end, providers, ' +
-      'ST_AsGeoJSON(spatial_extent)::json as spatial_extent ' +
-      'FROM test.collections';
+  'SELECT c.id, c.title, c.description, c.keywords, c.license, ' +
+  'c.temporal_start, c.temporal_end, c.providers, ' +
+  's.url AS source_url, ' +
+  'ST_AsGeoJSON(c.spatial_extent)::json as spatial_extent ' +
+  'FROM test.collections c ' +
+  'LEFT JOIN test.sources s ON c.source_id = s.id';
+
 
     const queryParams = [];
     const whereParts = [];
@@ -146,7 +150,14 @@ const getCollections = async (req, res) => {
         license: row.license,
         keywords: row.keywords,
         providers: row.providers && Array.isArray(row.providers) ? row.providers : [],
-        links: [{ rel: 'self', href: `/collections/${row.id}`, type: 'application/json' }]
+        links: [
+          { rel: 'self', href: `/collections/${row.id}`, type: 'application/json' },
+          ...(row.source_url
+            ? [{ rel: 'via', href: row.source_url, type: 'text/html' }]
+            : [])
+        ]
+
+
       };
     });
 
@@ -161,28 +172,32 @@ const getCollections = async (req, res) => {
 };
    
 const getCollectionById = async (req, res) => {
-    const { id } = req.params;
+  const { id } = req.params;
 
-    try {
-        // Extend the query to extract BBox coordinates directly from the geometry
-        const query = `
-            SELECT *, 
-                   ST_XMin(spatial_extent) as xmin, 
-                   ST_YMin(spatial_extent) as ymin, 
-                   ST_XMax(spatial_extent) as xmax, 
-                   ST_YMax(spatial_extent) as ymax 
-            FROM test.collections 
-            WHERE id = $1
-        `;
+  try {
+    const query = `
+      SELECT 
+        c.*,
+        s.url AS source_url,
+        ST_XMin(c.spatial_extent) as xmin, 
+        ST_YMin(c.spatial_extent) as ymin, 
+        ST_XMax(c.spatial_extent) as xmax, 
+        ST_YMax(c.spatial_extent) as ymax 
+      FROM test.collections c
+      LEFT JOIN test.sources s ON c.source_id = s.id
+      WHERE c.id = $1
+    `;
 
-        const result = await db.query(query, [id]);
+    const result = await db.query(query, [id]);
 
-        if (result.rows.length === 0) {
-            return res.status(404).json({
-                error: 'Collection not found',
-                message: `No collection with id "${id}" found`
-            });
-        }
+
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        error: 'Collection not found',
+        message: `No collection with id "${id}" found`
+      });
+    }
 
         const row = result.rows[0]; 
 
@@ -214,23 +229,27 @@ const getCollectionById = async (req, res) => {
               ...(row.processing_level_summary ? { 'processing:level': Array.isArray(row.processing_level_summary) ? row.processing_level_summary : [row.processing_level_summary] } : {})
             },
 
-            links: [
-                {
-                    rel: 'self',
-                    href: `/collections/${row.id}`,
-                    type: 'application/json'
-                },
-                {
-                    rel: 'root',
-                    href: '/',
-                    type: 'application/json'
-                },
-                {
-                    rel: 'parent',
-                    href: '/collections',
-                    type: 'application/json'
-                }
-            ]
+          links: [
+            {
+              rel: 'self',
+              href: `/collections/${row.id}`,
+              type: 'application/json'
+            },
+            {
+              rel: 'root',
+              href: '/',
+              type: 'application/json'
+            },
+            {
+              rel: 'parent',
+              href: '/collections',
+              type: 'application/json'
+            },
+            ...(row.source_url
+              ? [{ rel: 'via', href: row.source_url, type: 'text/html' }]
+              : [])
+          ]
+
         };
 
         
