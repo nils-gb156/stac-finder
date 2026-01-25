@@ -47,6 +47,7 @@ For detailed API documentation, see:
 - [Health Endpoint](../docs/api/health.md)
 - [Query Parameters](../docs/api/query-param/)
 - [Queryables](../docs/api/queryables.md/)
+- [Validation](../docs/api/validation.md)
 - [Logging](../docs/api/logging.md)
 
 ## Development Guidelines
