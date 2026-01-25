@@ -1,6 +1,6 @@
-import { startCrawler } from "./crawling/crawler_engine.js";
-import { saveInBackup } from "./crawling/queue_manager.js";
-import { logger } from "./crawling/src/config/logger.js"
+import { startCrawler } from "./crawlingEngine/crawler_engine.js";
+import { saveInBackup } from "./queueManager/queue_manager.js";
+import { logger } from "./logging/logger.js"
 
 //if someone stops the programm, save the data that is not yet uploaded lacally
 process.on('SIGINT', () => {

@@ -1,20 +1,20 @@
 //imports 
 import {
-    initializeQueue,
     getNextUrlFromDB,
     hasNextUrl,
     removeFromQueue,
     addToQueue,
     resetUrlData,
     urlData
-} from "./queue_manager.js";
+} from "../queueManager/queue_manager.js";
 
-import { loadUncrawledSources } from "./source_manager.js";
-import { handleSTACObject, crawlStacApi, validateQueueEntry, fetchWithRetry } from "./crawler_functions.js"
-import { validateStacObject } from "../parsing/json_validator.js";
-import { logger } from "./src/config/logger.js"
+import { loadUncrawledSources } from "../sourceManager/source_manager.js";
+import { handleSTACObject, crawlStacApi, fetchWithRetry } from "./crawler_functions.js"
+import { validateQueueEntry } from "../validation/queue_validator.js";
+import { validateStacObject } from "../validation/json_validator.js";
+import { logger } from "../logging/logger.js"
 import { getSTACIndexData } from "../data_management/stac_index_client.js";
-import { isInSources } from "./source_manager.js";
+import { isInSources } from "../sourceManager/source_manager.js";
 import fs from "fs"
 import path from "path"
 import { fileURLToPath } from "url"
@@ -22,7 +22,7 @@ import { fileURLToPath } from "url"
 // Resolve backup file path relative to this module
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
-const backupFilePath = path.resolve(__dirname, "./src/data/backupCopy.json")
+const backupFilePath = path.resolve(__dirname, "../queueManager/backupCopy.json")
 
 const CRAWL_DELAY_MS = 100; // Polite delay
 
@@ -218,60 +218,6 @@ export async function startCrawler() {
         
         // Remove processed URL from queue to avoid re-processing
         await removeFromQueue(url);
-    }
-
-    logger.info("Crawling finished");
-}
-
-/**
-* Continue crawler-loop:
-* continues crawling if the crawling process stopped because of a network failiure
-* - repeatedly fetches the URLs that are already in the queue
-* - adds new URLs into queue
-* - removes processed URL
-*
-* This function implements the core recursive traversal described in the Pflichtenheft.
-*
-* @async
-* @function continueCrawlingProcess
-* @returns {Promise<void>} Completes when no URLs remain in the queue
-*/
-export async function continueCrawlingProcess() {
-
-    logger.info("Crawling Process starts again where it stopped");
-
-    // Continue crawling until no URLs remain in queue
-    while (await hasNextUrl()) {
-
-        // Fetch next URL entry from queue table
-            const entry = await getNextUrlFromDB();
-            const url = entry.url_of_source;
-            const parentUrl = entry.parent_url ?? null;
-
-        try {
-            // Fetch STAC JSON with retry
-            const STACObject = await fetchWithRetry(url)
-
-            logger.info(`Crawling: ${url}`);
-            
-            // Only proceed if valid JSON was retrieved
-            if (validateStacObject(STACObject).valid) {
-
-                //for Catalogs: put the child urls into the queue
-                //for Collections: put the child urls into the queue, save the data in the sources/collections db
-                await handleSTACObject(STACObject, url, parentUrl)
-        
-                } else {
-                    logger.warn("Warning: Invalid STAC object")
-                }
-            
-        } catch(err) {
-            logger.warn(`Warning: Did not crawled the following url: ${url} because of the following error: ${err}`)
-        }
-        
-        // Remove processed URL from queue to avoid re-processing
-        await removeFromQueue(url);
-        await sleep(CRAWL_DELAY_MS);
     }
 
     logger.info("Crawling finished");
