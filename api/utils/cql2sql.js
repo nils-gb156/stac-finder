@@ -78,6 +78,48 @@ function astToSql(ast, queryableMap, params) {
   
       throw new Error(`BETWEEN not supported for ${node.left.name} (type ${q.type})`);
     };
+
+    const mapSpatial = (node) => {
+      const q = resolveColumn(node.left);
+      const col = q.column;
+
+      if (q.type !== 'geometry') {
+        throw new Error(`Spatial operator ${node.op} requires geometry field, got ${q.type}`);
+      }
+
+      // Parse BBox geometry from right side: { type: "BBox", value: [minX, minY, maxX, maxY] }
+      if (!node.right || node.right.type !== 'Literal') {
+        throw new Error('Spatial operator requires BBox literal');
+      }
+
+      const bbox = node.right.value;
+      if (!bbox || typeof bbox !== 'object' || bbox.type !== 'BBox' || !Array.isArray(bbox.value) || bbox.value.length < 4) {
+        throw new Error('Invalid BBox format: expected {type: "BBox", value: [minX, minY, maxX, maxY]}');
+      }
+
+      const [minX, minY, maxX, maxY] = bbox.value.map(Number);
+      if ([minX, minY, maxX, maxY].some(isNaN)) {
+        throw new Error('BBox coordinates must be numbers');
+      }
+
+      // Create PostGIS envelope for the bounding box
+      const bboxParam = nextParam(`POLYGON((${minX} ${minY}, ${maxX} ${minY}, ${maxX} ${maxY}, ${minX} ${maxY}, ${minX} ${minY}))`);
+      const geom = `ST_GeomFromText(${bboxParam}, 4326)`;
+
+      // Map CQL2 spatial operators to PostGIS functions
+      switch (node.op) {
+        case 'S_INTERSECTS':
+          return `ST_Intersects(${col}, ${geom})`;
+        case 'S_CONTAINS':
+          return `ST_Contains(${col}, ${geom})`;
+        case 'S_OVERLAPS':
+          return `ST_Overlaps(${col}, ${geom})`;
+        case 'S_WITHIN':
+          return `ST_Within(${col}, ${geom})`;
+        default:
+          throw new Error(`Unsupported spatial operator: ${node.op}`);
+      }
+    };
   
     const walk = (node) => {
       switch (node.type) {
@@ -91,6 +133,8 @@ function astToSql(ast, queryableMap, params) {
           return `(${mapIn(node)})`;
         case 'Between':
           return `(${mapBetween(node)})`;
+        case 'Spatial':
+          return `(${mapSpatial(node)})`;
         default:
           throw new Error(`Unknown AST node: ${node.type}`);
       }
