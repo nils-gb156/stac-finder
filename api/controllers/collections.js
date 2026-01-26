@@ -12,10 +12,9 @@ const getCollections = async (req, res) => {
     let sql =
   'SELECT c.id, c.title, c.description, c.keywords, c.license, ' +
   'c.temporal_start, c.temporal_end, c.providers, ' +
-  's.url AS source_url, ' +
+  '(SELECT url FROM test.sources WHERE id = c.source_id) AS source_url, ' +
   'ST_AsGeoJSON(c.spatial_extent)::json as spatial_extent ' +
-  'FROM test.collections c ' +
-  'LEFT JOIN test.sources s ON c.source_id = s.id';
+  'FROM test.collections c';
 
 
     const queryParams = [];
