@@ -16,7 +16,9 @@ module.exports = {
     temporal_start: { column: 'temporal_start', type: 'timestamptz' },
     temporal_end: { column: 'temporal_end', type: 'timestamptz' },
   
-    // spatial_extent: { column: 'spatial_extent', type: 'geometry' },
+    // Spatial
+    spatial_extent: { column: 'spatial_extent', type: 'geometry' },
+    
     // gsd_summary: { column: 'gsd_summary', type: 'jsonb' },
     // providers: { column: 'providers', type: 'jsonb' },
   };
