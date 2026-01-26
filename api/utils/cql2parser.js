@@ -44,9 +44,10 @@ function tokenize(input) {
         continue;
       }
   
-      // number
-      if (/[0-9]/.test(c)) {
+      // number (including negative numbers)
+      if (/[0-9]/.test(c) || (c === '-' && /[0-9]/.test(input[i + 1]))) {
         let j = i;
+        if (c === '-') j++; // skip minus sign
         while (j < input.length && /[0-9.]/.test(input[j])) j++;
         const raw = input.slice(i, j);
         const num = Number(raw);
