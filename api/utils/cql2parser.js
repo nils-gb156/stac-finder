@@ -44,9 +44,10 @@ function tokenize(input) {
         continue;
       }
   
-      // number
-      if (/[0-9]/.test(c)) {
+      // number (including negative numbers)
+      if (/[0-9]/.test(c) || (c === '-' && /[0-9]/.test(input[i + 1]))) {
         let j = i;
+        if (c === '-') j++; // skip minus sign
         while (j < input.length && /[0-9.]/.test(input[j])) j++;
         const raw = input.slice(i, j);
         const num = Number(raw);
@@ -103,25 +104,70 @@ function tokenize(input) {
       const t = eat('IDENT');
       return { type: 'Identifier', name: t.value };
     };
+
+    const parseBBox = () => {
+      // BBOX(minX, minY, maxX, maxY)
+      eat('(');
+      const coords = [];
+      coords.push(eat('NUMBER').value);
+      for (let i = 0; i < 3; i++) {
+        eat(',');
+        coords.push(eat('NUMBER').value);
+      }
+      eat(')');
+      return { type: 'Literal', value: { type: 'BBox', value: coords } };
+    };
+
+    const parseSpatialFunction = (funcName) => {
+      // S_INTERSECTS(property, BBOX(...))
+      eat('(');
+      const left = parseIdentifier();
+      eat(',');
+      
+      const t = peek();
+      if (!t || t.type !== 'IDENT') throw new Error('Expected BBOX function');
+      const bboxName = eat('IDENT').value.toUpperCase();
+      if (bboxName !== 'BBOX') throw new Error(`Expected BBOX but got ${bboxName}`);
+      
+      const right = parseBBox();
+      eat(')');
+      
+      return { type: 'Spatial', op: funcName.toUpperCase(), left, right };
+    };
   
     const parsePredicate = () => {
-      const left = parseIdentifier();
       const t = peek();
-      if (!t) throw new Error('Expected operator but got EOF');
-  
-      if (t.type === 'OP') {
+      if (!t) throw new Error('Expected identifier or function but got EOF');
+      
+      // Check if it's a spatial function
+      if (t.type === 'IDENT') {
+        const funcName = t.value.toUpperCase();
+        const spatialFuncs = ['S_INTERSECTS', 'S_CONTAINS', 'S_OVERLAPS', 'S_WITHIN'];
+        
+        if (spatialFuncs.includes(funcName)) {
+          eat('IDENT');
+          return parseSpatialFunction(funcName);
+        }
+      }
+      
+      // Regular property-based predicate
+      const left = parseIdentifier();
+      const t2 = peek();
+      if (!t2) throw new Error('Expected operator but got EOF');
+
+      if (t2.type === 'OP') {
         const op = eat('OP').value;
         const right = parseLiteral();
         return { type: 'Compare', op, left, right };
       }
-  
-      if (t.type === 'LIKE') {
+
+      if (t2.type === 'LIKE') {
         eat('LIKE');
         const right = parseLiteral();
         return { type: 'Compare', op: 'LIKE', left, right };
       }
-  
-      if (t.type === 'IN') {
+
+      if (t2.type === 'IN') {
         eat('IN');
         eat('(');
         const values = [parseLiteral()];
@@ -132,16 +178,16 @@ function tokenize(input) {
         eat(')');
         return { type: 'In', left, values };
       }
-  
-      if (t.type === 'BETWEEN') {
+
+      if (t2.type === 'BETWEEN') {
         eat('BETWEEN');
         const low = parseLiteral();
         eat('AND');
         const high = parseLiteral();
         return { type: 'Between', left, low, high };
       }
-  
-      throw new Error(`Expected operator/LIKE/IN/BETWEEN but got ${t.type}`);
+
+      throw new Error(`Expected operator/LIKE/IN/BETWEEN but got ${t2.type}`);
     };
   
     const parsePrimary = () => {
