@@ -49,11 +49,6 @@ export async function startCrawler() {
 
         logger.info(`Found ${queueBackupCopy.urls.length} URL's in the backup file.`)
 
-        //Remove the backup file
-        fs.unlinkSync(backupFilePath)
-
-        logger.info("Removed the backup file")
-
         //validate the backup data
         for (let i = queueBackupCopy.urls.length - 1; i >= 0; i--) {
             const title = queueBackupCopy.titles[i]
@@ -71,6 +66,11 @@ export async function startCrawler() {
         }
 
         addToQueue(queueBackupCopy.titles, queueBackupCopy.urls, queueBackupCopy.parentUrls)
+        
+        //Remove the backup file
+        fs.unlinkSync(backupFilePath)
+
+        logger.info("Removed the backup file")
     }
 
     //reset the url Data
@@ -102,7 +102,7 @@ export async function startCrawler() {
     if (urlData.titles.length == urlData.urls.length) {
 
         //push uncrawled sources to the queue
-        await addToQueue(urlData.titles, urlData.urls, urlData.parentUrls); //
+        await addToQueue(urlData.titles, urlData.urls, urlData.parentUrls);
 
     } else {
         logger.error(`There are ${urlData.titles.length} titles but ${urlData.urls.length} urls you want to add to the queue.`)
@@ -173,30 +173,35 @@ export async function startCrawler() {
         try {
             // Fetch STAC JSON with retry
             const STACObject = await fetchWithRetry(url)
-            logger.info(`Crawling: ${url}`);
-            
-            // Only proceed if valid JSON was retrieved
-            if (validateStacObject(STACObject).valid) {
 
-                //for Catalogs: get the child data and save the catalog data in the sources db
-                //for Collections: get the child data, save the collection data in the collections and the sources db
-                const childData = await handleSTACObject(STACObject, url, parentUrl)
+            //only continue if the object type is a Catalog, a Collection or a API
+            if (STACObject.type === "Catalog" || STACObject.type === "Collection" || STACObject.type === "API") {
 
-                for(let child of childData) {
+                logger.info(`Crawling: ${url}`);
+                
+                // Only proceed if valid JSON was retrieved
+                if (validateStacObject(STACObject).valid) {
 
-                    //validate child data
-                    if(validateQueueEntry(child.title, child.url, url)) {
+                    //for Catalogs: get the child data and save the catalog data in the sources db
+                    //for Collections: get the child data, save the collection data in the collections and the sources db
+                    const childData = await handleSTACObject(STACObject, url, parentUrl)
 
-                        //add the child data to the urlData
-                        urlData.titles.push(child.title)
-                        urlData.urls.push(child.url)
-                        urlData.parentUrls.push(url)
+                    for(let child of childData) {
+
+                        //validate child data
+                        if(validateQueueEntry(child.title, child.url, url)) {
+
+                            //add the child data to the urlData
+                            urlData.titles.push(child.title)
+                            urlData.urls.push(child.url)
+                            urlData.parentUrls.push(url)
+                        }
                     }
-                }
 
                 } else {
-                    logger.warn("Warning: Invalid STAC object")
+                        logger.warn("Warning: Invalid STAC object")
                 }
+            }
             
         } catch(err) {
             logger.warn(`Warning: Did not crawled the following url: ${url} because of the following error: ${err}`)
