@@ -48,7 +48,21 @@ export function parseCollection(json, sourceId, crawledAt) {
         gsd: toArray(summaries.gsd),
         processing_level: toArray(summaries['processing:level']),
 
+        // STAC Extensions
+        stac_extensions: normalizeStacExtensions(json.stac_extensions),
+
         // Archiving 
         raw_json: structuredClone(json)
     };
+}
+
+// Normalize STAC extension URLs to their base names
+function normalizeStacExtensions(extensions = []) {
+    if (!extensions || !Array.isArray(extensions)) return [];
+    return extensions.map(url => {
+        try {
+            const match = url.match(/\/([a-z0-9-_]+)\/v\d+\./);
+            return match ? match[1] : null; 
+        } catch (e) { return null; }
+    }).filter(e => e !== null);
 }
