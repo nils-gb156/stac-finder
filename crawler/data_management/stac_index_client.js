@@ -14,7 +14,8 @@ export async function getSTACIndexData() {
         const result = await query(`
             SELECT 
                 url,
-                title
+                title,
+                is_api
             FROM stac.catalogs
         `)
 
