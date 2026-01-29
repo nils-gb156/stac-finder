@@ -175,7 +175,9 @@ const getCollections = async (req, res) => {
       title: "Queryables for collection search"
     });
 
-    return res.json({ collections, links });
+    // numberReturned: number of collections actually returned
+    const numberReturned = collections.length;
+    return res.json({ collections, links, numberReturned });
 
   } catch (err) {
     console.error('Error fetching collections: ', err);
