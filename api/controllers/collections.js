@@ -145,6 +145,29 @@ const getCollections = async (req, res) => {
         }
       }
 
+      // Build summaries only with non-empty arrays or valid values
+      const summaries = {};
+      if (row.doi) {
+        const val = Array.isArray(row.doi) ? row.doi : [row.doi];
+        if (val.length > 0 && val[0] != null && val[0] !== '') summaries.doi = val;
+      }
+      if (row.platform_summary) {
+        const val = Array.isArray(row.platform_summary) ? row.platform_summary : [row.platform_summary];
+        if (val.length > 0 && val[0] != null && val[0] !== '') summaries.platform = val;
+      }
+      if (row.constellation_summary) {
+        const val = Array.isArray(row.constellation_summary) ? row.constellation_summary : [row.constellation_summary];
+        if (val.length > 0 && val[0] != null && val[0] !== '') summaries.constellation = val;
+      }
+      if (row.gsd_summary) {
+        const val = Array.isArray(row.gsd_summary) ? row.gsd_summary : [row.gsd_summary];
+        if (val.length > 0 && val[0] != null && val[0] !== '') summaries.gsd = val;
+      }
+      if (row.processing_level_summary) {
+        const val = Array.isArray(row.processing_level_summary) ? row.processing_level_summary : [row.processing_level_summary];
+        if (val.length > 0 && val[0] != null && val[0] !== '') summaries['processing:level'] = val;
+      }
+
       return {
         stac_version: '1.0.0',
         type: 'Collection',
@@ -158,13 +181,7 @@ const getCollections = async (req, res) => {
         license: row.license,
         keywords: row.keywords,
         providers: row.providers && Array.isArray(row.providers) ? row.providers : [],
-        summaries: {
-          ...(row.doi ? { doi: Array.isArray(row.doi) ? row.doi : [row.doi] } : {}),
-          ...(row.platform_summary ? { platform: Array.isArray(row.platform_summary) ? row.platform_summary : [row.platform_summary] } : {}),
-          ...(row.constellation_summary ? { constellation: Array.isArray(row.constellation_summary) ? row.constellation_summary : [row.constellation_summary] } : {}),
-          ...(row.gsd_summary ? { gsd: Array.isArray(row.gsd_summary) ? row.gsd_summary : [row.gsd_summary] } : {}),
-          ...(row.processing_level_summary ? { 'processing:level': Array.isArray(row.processing_level_summary) ? row.processing_level_summary : [row.processing_level_summary] } : {})
-        },
+        ...(Object.keys(summaries).length > 0 ? { summaries } : {}),
         links: [
           { rel: 'self', 
             href: `/collections/${row.id}`, 
@@ -237,6 +254,29 @@ const getCollectionById = async (req, res) => {
 
     const row = result.rows[0];
 
+    // Build summaries only with non-empty arrays or valid values
+    const summaries = {};
+    if (row.doi) {
+      const val = Array.isArray(row.doi) ? row.doi : [row.doi];
+      if (val.length > 0 && val[0] != null && val[0] !== '') summaries.doi = val;
+    }
+    if (row.platform_summary) {
+      const val = Array.isArray(row.platform_summary) ? row.platform_summary : [row.platform_summary];
+      if (val.length > 0 && val[0] != null && val[0] !== '') summaries.platform = val;
+    }
+    if (row.constellation_summary) {
+      const val = Array.isArray(row.constellation_summary) ? row.constellation_summary : [row.constellation_summary];
+      if (val.length > 0 && val[0] != null && val[0] !== '') summaries.constellation = val;
+    }
+    if (row.gsd_summary) {
+      const val = Array.isArray(row.gsd_summary) ? row.gsd_summary : [row.gsd_summary];
+      if (val.length > 0 && val[0] != null && val[0] !== '') summaries.gsd = val;
+    }
+    if (row.processing_level_summary) {
+      const val = Array.isArray(row.processing_level_summary) ? row.processing_level_summary : [row.processing_level_summary];
+      if (val.length > 0 && val[0] != null && val[0] !== '') summaries['processing:level'] = val;
+    }
+
     const collection = {
       stac_version: '1.0.0',
       type: 'Collection',
@@ -255,16 +295,7 @@ const getCollectionById = async (req, res) => {
       license: row.license,
       keywords: row.keywords,
       providers: row.providers && Array.isArray(row.providers) ? row.providers : [],
-
-      summaries: {
-        // Omit doi when not present; coerce single values to arrays per STAC spec
-        ...(row.doi ? { doi: Array.isArray(row.doi) ? row.doi : [row.doi] } : {}),
-        ...(row.platform_summary ? { platform: Array.isArray(row.platform_summary) ? row.platform_summary : [row.platform_summary] } : {}),
-        ...(row.constellation_summary ? { constellation: Array.isArray(row.constellation_summary) ? row.constellation_summary : [row.constellation_summary] } : {}),
-        ...(row.gsd_summary ? { gsd: Array.isArray(row.gsd_summary) ? row.gsd_summary : [row.gsd_summary] } : {}),
-        ...(row.processing_level_summary ? { 'processing:level': Array.isArray(row.processing_level_summary) ? row.processing_level_summary : [row.processing_level_summary] } : {})
-      },
-
+      ...(Object.keys(summaries).length > 0 ? { summaries } : {}),
       links: [
         {
           rel: 'self',
@@ -285,7 +316,6 @@ const getCollectionById = async (req, res) => {
           ? [{ rel: 'via', href: row.source_url, type: 'text/html' }]
           : [])
       ]
-
     };
 
 
