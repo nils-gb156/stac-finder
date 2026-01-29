@@ -97,6 +97,16 @@ const createPaginationLinks = (baseUrl, query, offset, limit, resultCount, hasMo
         }
     ];
 
+    // Add 'first' link (always points to the first page, i.e., no token)
+    const firstQuery = { ...query };
+    delete firstQuery.token;
+    firstQuery.limit = limit;
+    links.push({
+        rel: 'first',
+        href: `${baseUrl}${buildQueryString(firstQuery)}`,
+        type: 'application/json'
+    });
+
     // Determine if there are more results
     const shouldShowNext = hasMoreResults !== null 
         ? hasMoreResults 
