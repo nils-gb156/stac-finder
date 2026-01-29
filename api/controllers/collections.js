@@ -16,6 +16,8 @@ const getCollections = async (req, res) => {
       'ST_AsGeoJSON(c.spatial_extent)::json as spatial_extent ' +
       'FROM test.collections c';
 
+    // For numberMatched: build a separate COUNT(*) query with the same WHERE conditions
+    let countSql = 'SELECT COUNT(*) FROM test.collections c';
 
     const queryParams = [];
     const whereParts = [];
@@ -88,7 +90,9 @@ const getCollections = async (req, res) => {
 
     // Apply WHERE if any
     if (whereParts.length > 0) {
-      sql += ` WHERE ${whereParts.join(' AND ')}`;
+      const whereClause = ` WHERE ${whereParts.join(' AND ')}`;
+      sql += whereClause;
+      countSql += whereClause;
     }
 
     // --- Sorting ---
@@ -116,6 +120,10 @@ const getCollections = async (req, res) => {
     // Fetch one extra item to check if there are more results
     const fetchLimit = limit + 1;
     sql += ` LIMIT ${fetchLimit} OFFSET ${offset}`;
+
+    // Execute the COUNT query to determine numberMatched
+    const countResult = await db.query(countSql, queryParams);
+    const numberMatched = parseInt(countResult.rows[0].count, 10);
 
     const result = await db.query(sql, queryParams);
 
@@ -177,7 +185,7 @@ const getCollections = async (req, res) => {
 
     // numberReturned: number of collections actually returned
     const numberReturned = collections.length;
-    return res.json({ collections, links, numberReturned });
+    return res.json({ collections, links, numberReturned, numberMatched });
 
   } catch (err) {
     console.error('Error fetching collections: ', err);
