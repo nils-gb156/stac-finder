@@ -165,10 +165,12 @@ const getCollections = async (req, res) => {
 
     const links = createPaginationLinks('/collections', req.query, offset, limit, collections.length, hasMoreResults);
 
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
+
     // add querybales link
     links.push({
-      rel: "queryables",
-      href: "/collections/queryables",
+      rel: "http://www.opengis.net/def/rel/ogc/1.0/queryables",
+      href: `${baseUrl}/collections/queryables`,
       type: "application/schema+json",
       title: "Queryables for collection search"
     });
