@@ -6,6 +6,8 @@ const getQueryables = async (req, res) => {
         const queryables = {
             type: 'Queryables',
             title: 'Filterbare Felder für STAC-Collections',
+            stac_version: '1.0.0',
+            type: 'object',
             description:
                 'Diese Ressource beschreibt alle Felder, nach denen in /collections gefiltert werden kann.',
             properties: {
