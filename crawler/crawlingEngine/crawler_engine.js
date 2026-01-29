@@ -82,20 +82,15 @@ export async function startCrawler() {
     logger.info(`Found ${sources.length} sources to process.`);
 
     for (const source of sources) {
-        if (source.type === 'API') {
-            // Process directly, no queue needed for the collections list
-            await crawlStacApi(source); //
-        } else {
-            //validate data
-            if (validateQueueEntry(source.title, source.url)) {
+        //validate data
+        if (validateQueueEntry(source.title, source.url)) {
 
-                //add the data to the array
-                urlData.titles.push(source.title)
-                urlData.urls.push(source.url)
-                urlData.parentUrls.push(null)
+            //add the data to the array
+            urlData.titles.push(source.title)
+            urlData.urls.push(source.url)
+            urlData.parentUrls.push(null)
             }
         }
-    }
 
     //make sure that the length of the arrays is equal
     //otherwise the data could get mixed up
@@ -120,8 +115,12 @@ export async function startCrawler() {
         //bring the data in the format needed to add it to the queue
         for (let data of STACIndexData) {
 
+            if (data.is_api) {
+                await crawlStacApi(data.url, data.title)
+            }
+
             //validate data
-            if (validateQueueEntry(data.title, data.url)) {
+            else if (validateQueueEntry(data.title, data.url)) {
 
                 //add the data to the array
                 urlData.titles.push(data.title)
@@ -175,7 +174,7 @@ export async function startCrawler() {
             const STACObject = await fetchWithRetry(url)
 
             //only continue if the object type is a Catalog, a Collection or a API
-            if (STACObject.type === "Catalog" || STACObject.type === "Collection" || STACObject.type === "API") {
+            if (STACObject.type === "Catalog" || STACObject.type === "Collection") {
 
                 logger.info(`Crawling: ${url}`);
                 

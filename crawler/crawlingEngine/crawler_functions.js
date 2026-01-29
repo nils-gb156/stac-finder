@@ -209,15 +209,16 @@ export function getChildURLs(STACObject, Link) {
 }
 
 /**
- * @param {Object} source - The source object from the database (id, url, type, title).
+ * @param {url} - url of the api
+ * @param {title} - title of the api
  */
-export async function crawlStacApi(source) {
-    logger.info(`Starting API Crawl for: ${source.url}`);
+export async function crawlStacApi(url, title) {
+    logger.info(`Starting API Crawl for: ${url}`);
 
     try {
         // Prepare URL: Append "/collections" to the base URL
         // Remove trailing slash if present, then add /collections
-        let collectionsUrl = source.url.replace(/\/$/, "") + "/collections";
+        let collectionsUrl = url.replace(/\/$/, "") + "/collections";
         
         //Fetch the Collections list with Retry
         const data = await fetchWithRetry(collectionsUrl);
@@ -225,23 +226,31 @@ export async function crawlStacApi(source) {
         // APIs usually return { "collections": [...] }
         const collections = data.collections || [];
 
-        logger.info(`Found ${collections.length} collections in API ${source.url}`);
+        logger.info(`Found ${collections.length} collections in API ${url}`);
+
+        // Ensure API source exists in database and get its ID
+        const sourceId = await upsertSource({
+            url: url,
+            title: title || 'STAC API',
+            type: 'API'
+        });
 
         //Iterate and Save
         for (const collection of collections) {
             
+            // Try to find "self" link, otherwise construct URL
+            const selfLink = collection.links?.find(link => link.rel === 'self');
+            
             // Parse API collection to extract metadata and prepare for DB upsert
-            const parsedCollection = parseCollection(collection, source.id, new Date());
+            const parsedCollection = parseCollection(collection, sourceId, new Date());
             if (parsedCollection) {
                 await upsertCollection(parsedCollection);
         }
         }
 
-        // Mark as crawled (Update Timestamp in DB)
-        await markSourceCrawled(source.id);
-        logger.info(`Finished API Crawl for ${source.url}`);
+        logger.info(`Finished API Crawl for ${url}`);
 
     } catch (error) {
-        logger.error(`API Crawl failed for ${source.url}: ${error.message}`);
+        logger.error(`API Crawl failed for ${url}: ${error.message}`);
     }
 }
