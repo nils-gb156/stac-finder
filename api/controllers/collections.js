@@ -12,6 +12,7 @@ const getCollections = async (req, res) => {
     let sql =
       'SELECT c.id, c.title, c.description, c.keywords, c.license, ' +
       'c.temporal_start, c.temporal_end, c.providers, ' +
+      'c.doi, c.platform_summary, c.constellation_summary, c.gsd_summary, c.processing_level_summary, ' + 
       '(SELECT url FROM test.sources WHERE id = c.source_id) AS source_url, ' +
       'ST_AsGeoJSON(c.spatial_extent)::json as spatial_extent ' +
       'FROM test.collections c';
@@ -157,6 +158,13 @@ const getCollections = async (req, res) => {
         license: row.license,
         keywords: row.keywords,
         providers: row.providers && Array.isArray(row.providers) ? row.providers : [],
+        summaries: {
+          ...(row.doi ? { doi: Array.isArray(row.doi) ? row.doi : [row.doi] } : {}),
+          ...(row.platform_summary ? { platform: Array.isArray(row.platform_summary) ? row.platform_summary : [row.platform_summary] } : {}),
+          ...(row.constellation_summary ? { constellation: Array.isArray(row.constellation_summary) ? row.constellation_summary : [row.constellation_summary] } : {}),
+          ...(row.gsd_summary ? { gsd: Array.isArray(row.gsd_summary) ? row.gsd_summary : [row.gsd_summary] } : {}),
+          ...(row.processing_level_summary ? { 'processing:level': Array.isArray(row.processing_level_summary) ? row.processing_level_summary : [row.processing_level_summary] } : {})
+        },
         links: [
           { rel: 'self', 
             href: `/collections/${row.id}`, 
@@ -166,8 +174,6 @@ const getCollections = async (req, res) => {
             ? [{ rel: 'via', href: row.source_url, type: 'text/html' }]
             : [])
         ]
-
-
       };
     });
 
