@@ -5,18 +5,18 @@
 
 import pkg from "pg"
 const { Pool } = pkg
-import dotenv from "dotenv"
+import 'dotenv/config'
 
 const pool = new Pool({
   host: process.env.DB_HOST,
-  user: process.env.DB_USER,
   port: process.env.DB_PORT,
+  user: process.env.DB_USER,
   password: process.env.DB_PASS,
   database: process.env.DB_NAME
 });
 
 pool.on('error', (err) => {
-  console.error('Unexpected error on idle client', err);
+  console.error('Unexpected DB error:', err);
   process.exit(-1);
 });
 
