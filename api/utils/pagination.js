@@ -88,12 +88,13 @@ const buildQueryString = (params) => {
  * @param {boolean} hasMoreResults - Whether there are more results available (determined by LIMIT+1 check)
  * @returns {Array} Array of link objects
  */
-const createPaginationLinks = (baseUrl, query, offset, limit, resultCount, hasMoreResults = null) => {
+const createPaginationLinks = (baseUrl, query, offset, limit, resultCount, hasMoreResults = null, numberMatched = null) => {
     const links = [
         {
             rel: 'self',
             href: `${baseUrl}${buildQueryString(query)}`,
-            type: 'application/json'
+            type: 'application/json',
+            title: 'This page'
         }
     ];
 
@@ -104,14 +105,12 @@ const createPaginationLinks = (baseUrl, query, offset, limit, resultCount, hasMo
     links.push({
         rel: 'first',
         href: `${baseUrl}${buildQueryString(firstQuery)}`,
-        type: 'application/json'
+        type: 'application/json',
+        title: 'First page'
     });
 
     // Add 'last' link if numberMatched is available and > 0
-    // numberMatched is passed as resultCount if hasMoreResults is not null, otherwise not available
-    // To be robust, expect numberMatched as a property on query if needed
-    const numberMatched = query && typeof query.numberMatched === 'number' ? query.numberMatched : null;
-    if (numberMatched && numberMatched > 0) {
+    if (typeof numberMatched === 'number' && numberMatched > 0) {
         // Calculate last page offset (zero-based, so subtract 1)
         const lastPageOffset = Math.floor((numberMatched - 1) / limit) * limit;
         const lastToken = createPaginationToken(lastPageOffset);
@@ -119,7 +118,8 @@ const createPaginationLinks = (baseUrl, query, offset, limit, resultCount, hasMo
         links.push({
             rel: 'last',
             href: `${baseUrl}${buildQueryString(lastQuery)}`,
-            type: 'application/json'
+            type: 'application/json',
+            title: 'Last page'
         });
     }
 
@@ -136,7 +136,8 @@ const createPaginationLinks = (baseUrl, query, offset, limit, resultCount, hasMo
         links.push({
             rel: 'next',
             href: `${baseUrl}${buildQueryString(nextQuery)}`,
-            type: 'application/json'
+            type: 'application/json',
+            title: 'Next page'
         });
     }
 
@@ -148,7 +149,8 @@ const createPaginationLinks = (baseUrl, query, offset, limit, resultCount, hasMo
         links.push({
             rel: 'prev',
             href: `${baseUrl}${buildQueryString(prevQuery)}`,
-            type: 'application/json'
+            type: 'application/json',
+            title: 'Prev page'
         });
     }
 
