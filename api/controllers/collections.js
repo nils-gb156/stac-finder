@@ -23,6 +23,8 @@ const getCollections = async (req, res) => {
     const queryParams = [];
     const whereParts = [];
 
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
+
     // --- Text search (q=...) ---
     const { whereClause: searchWhere, params: searchParams, error: searchError } = parseTextSearch(req.query.q);
     if (searchError) {
@@ -184,11 +186,15 @@ const getCollections = async (req, res) => {
         ...(Object.keys(summaries).length > 0 ? { summaries } : {}),
         links: [
           { rel: 'self', 
-            href: `/collections/${row.id}`, 
-            type: 'application/json' 
+            href: `${baseUrl}/collections/${row.id}`, 
+            type: 'application/json' ,
+            title: 'This document'
           },
           ...(row.source_url
-            ? [{ rel: 'via', href: row.source_url, type: 'text/html' }]
+            ? [{ rel: 'via', 
+              href: row.source_url, 
+              type: 'text/html',
+              title: 'Source url' }]
             : [])
         ]
       };
@@ -196,15 +202,14 @@ const getCollections = async (req, res) => {
 
     // Pass numberMatched in the query object so 'last' link can be generated
     const links = createPaginationLinks(
-      '/collections',
-      { ...req.query, numberMatched },
+      `${baseUrl}/collections`,
+      { ...req.query },
       offset,
       limit,
       collections.length,
-      hasMoreResults
+      hasMoreResults,
+      numberMatched
     );
-
-    const baseUrl = `${req.protocol}://${req.get('host')}`;
 
     // add querybales link
     links.push({
@@ -226,6 +231,7 @@ const getCollections = async (req, res) => {
 
 const getCollectionById = async (req, res) => {
   const { id } = req.params;
+  const baseUrl = `${req.protocol}://${req.get('host')}`;
 
   try {
     const query = `
@@ -299,21 +305,32 @@ const getCollectionById = async (req, res) => {
       links: [
         {
           rel: 'self',
-          href: `/collections/${row.id}`,
+          href: `${baseUrl}/collections/${row.id}`,
           type: 'application/json'
         },
         {
           rel: 'root',
-          href: '/',
-          type: 'application/json'
+          href: `${baseUrl}`,
+          type: 'application/json',
+          title: 'STACFinder API'
         },
         {
           rel: 'parent',
-          href: '/collections',
-          type: 'application/json'
+          href: `${baseUrl}`,
+          type: 'application/json',
+          title: 'STACFinder API'
+        },
+        {
+          rel: 'http://www.opengis.net/def/rel/ogc/1.0/queryables',
+          type: 'application/schema+json',
+          href: `${baseUrl}/collections/queryables`,
+          title: "Queryables for collection search"
         },
         ...(row.source_url
-          ? [{ rel: 'via', href: row.source_url, type: 'text/html' }]
+          ? [{ rel: 'via', 
+               href: row.source_url, 
+               type: 'text/html',
+               title: 'Source url' }]
           : [])
       ]
     };
