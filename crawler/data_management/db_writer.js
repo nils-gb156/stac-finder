@@ -85,6 +85,7 @@ export async function upsertCollection(data) {
   const providers = safeJSON(data.providers, []);
   const gsd = safeJSON(data.gsd, null);
   const raw_json = safeJSON(data.raw_json, {});
+  const stac_extensions = toTextArray(data.stac_extensions);
 
   const query = `
     INSERT INTO stac.collections (
@@ -92,7 +93,7 @@ export async function upsertCollection(data) {
       providers, doi, platform_summary, constellation_summary,
       gsd_summary, processing_level_summary,
       spatial_extent, temporal_start, temporal_end,
-      last_crawled_timestamp, raw_json
+      last_crawled_timestamp, raw_json, stac_extensions
     )
     VALUES (
       $1, $2, $3, $4, $5, $6,
@@ -104,6 +105,7 @@ export async function upsertCollection(data) {
       $17, $18,
       NOW(),
       $19::jsonb
+      $20
     )
     ON CONFLICT (id) DO UPDATE SET
       source_id = EXCLUDED.source_id,
@@ -122,6 +124,7 @@ export async function upsertCollection(data) {
       temporal_end = EXCLUDED.temporal_end,
       last_crawled_timestamp = NOW(),
       raw_json = EXCLUDED.raw_json;
+      stac_extensions = EXCLUDED.stac_extensions;
   `;
 
   const values = [
@@ -141,6 +144,7 @@ export async function upsertCollection(data) {
     data.temporal_start ?? null,
     data.temporal_end ?? null,
     JSON.stringify(raw_json),
+    stac_extensions
   ];
 
   await pool.query(query, values);
