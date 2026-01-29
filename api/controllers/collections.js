@@ -171,7 +171,15 @@ const getCollections = async (req, res) => {
       };
     });
 
-    const links = createPaginationLinks('/collections', req.query, offset, limit, collections.length, hasMoreResults);
+    // Pass numberMatched in the query object so 'last' link can be generated
+    const links = createPaginationLinks(
+      '/collections',
+      { ...req.query, numberMatched },
+      offset,
+      limit,
+      collections.length,
+      hasMoreResults
+    );
 
     const baseUrl = `${req.protocol}://${req.get('host')}`;
 
