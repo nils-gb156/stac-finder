@@ -10,12 +10,11 @@ const queryableMap = require('../utils/queryableMap');
 const getCollections = async (req, res) => {
   try {
     let sql =
-  'SELECT c.id, c.title, c.description, c.keywords, c.license, ' +
-  'c.temporal_start, c.temporal_end, c.providers, ' +
-  's.url AS source_url, ' +
-  'ST_AsGeoJSON(c.spatial_extent)::json as spatial_extent ' +
-  'FROM test.collections c ' +
-  'LEFT JOIN test.sources s ON c.source_id = s.id';
+      'SELECT c.id, c.title, c.description, c.keywords, c.license, ' +
+      'c.temporal_start, c.temporal_end, c.providers, ' +
+      '(SELECT url FROM test.sources WHERE id = c.source_id) AS source_url, ' +
+      'ST_AsGeoJSON(c.spatial_extent)::json as spatial_extent ' +
+      'FROM test.collections c';
 
 
     const queryParams = [];
@@ -50,40 +49,40 @@ const getCollections = async (req, res) => {
     }
 
 
-      // --- Datetime filter (datetime=...) ---
-      const { whereClause: datetimeWhere, params: datetimeParams, error: datetimeError } = parseDatetimeFilter(req.query.datetime);
-      if (datetimeError) {
-          return res.status(datetimeError.status).json({
-              error: datetimeError.error,
-              message: datetimeError.message
-          });
-      }
+    // --- Datetime filter (datetime=...) ---
+    const { whereClause: datetimeWhere, params: datetimeParams, error: datetimeError } = parseDatetimeFilter(req.query.datetime);
+    if (datetimeError) {
+      return res.status(datetimeError.status).json({
+        error: datetimeError.error,
+        message: datetimeError.message
+      });
+    }
 
-      if (datetimeWhere) {
-          // Adjust parameter placeholders based on existing parameters
-          const adjustedWhere = datetimeWhere.replace(/\$(\d+)/g, (match, num) => {
-              return `$${queryParams.length + parseInt(num, 10)}`;
-          });
-          whereParts.push(`(${adjustedWhere})`);
-          queryParams.push(...datetimeParams);
-      }
+    if (datetimeWhere) {
+      // Adjust parameter placeholders based on existing parameters
+      const adjustedWhere = datetimeWhere.replace(/\$(\d+)/g, (match, num) => {
+        return `$${queryParams.length + parseInt(num, 10)}`;
+      });
+      whereParts.push(`(${adjustedWhere})`);
+      queryParams.push(...datetimeParams);
+    }
 
-      // --- BBox filter (bbox=...) ---
-      const { whereClause: bboxWhere, params: bboxParams, error: bboxError } = parseBboxFilter(req.query.bbox);
-      if (bboxError) {
-          return res.status(bboxError.status).json({
-              error: bboxError.error,
-              message: bboxError.message
-          });
-      }
+    // --- BBox filter (bbox=...) ---
+    const { whereClause: bboxWhere, params: bboxParams, error: bboxError } = parseBboxFilter(req.query.bbox);
+    if (bboxError) {
+      return res.status(bboxError.status).json({
+        error: bboxError.error,
+        message: bboxError.message
+      });
+    }
 
-      if (bboxWhere) {
-          const adjustedWhere = bboxWhere.replace(/\$(\d+)/g, (match, num) => {
-              return `$${queryParams.length + parseInt(num, 10)}`;
-          });
-          whereParts.push(`(${adjustedWhere})`);
-          queryParams.push(...bboxParams);
-      }
+    if (bboxWhere) {
+      const adjustedWhere = bboxWhere.replace(/\$(\d+)/g, (match, num) => {
+        return `$${queryParams.length + parseInt(num, 10)}`;
+      });
+      whereParts.push(`(${adjustedWhere})`);
+      queryParams.push(...bboxParams);
+    }
 
 
 
@@ -113,7 +112,7 @@ const getCollections = async (req, res) => {
         message: paginationError.message
       });
     }
-    
+
     // Fetch one extra item to check if there are more results
     const fetchLimit = limit + 1;
     sql += ` LIMIT ${fetchLimit} OFFSET ${offset}`;
@@ -122,7 +121,7 @@ const getCollections = async (req, res) => {
 
     // Check if there are more results than requested
     const hasMoreResults = result.rows.length > limit;
-    
+
     // Only return the requested number of items (not the extra one)
     const rowsToReturn = hasMoreResults ? result.rows.slice(0, limit) : result.rows;
 
@@ -151,7 +150,10 @@ const getCollections = async (req, res) => {
         keywords: row.keywords,
         providers: row.providers && Array.isArray(row.providers) ? row.providers : [],
         links: [
-          { rel: 'self', href: `/collections/${row.id}`, type: 'application/json' },
+          { rel: 'self', 
+            href: `/collections/${row.id}`, 
+            type: 'application/json' 
+          },
           ...(row.source_url
             ? [{ rel: 'via', href: row.source_url, type: 'text/html' }]
             : [])
@@ -163,6 +165,16 @@ const getCollections = async (req, res) => {
 
     const links = createPaginationLinks('/collections', req.query, offset, limit, collections.length, hasMoreResults);
 
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
+
+    // add querybales link
+    links.push({
+      rel: "http://www.opengis.net/def/rel/ogc/1.0/queryables",
+      href: `${baseUrl}/collections/queryables`,
+      type: "application/schema+json",
+      title: "Queryables for collection search"
+    });
+
     return res.json({ collections, links });
 
   } catch (err) {
@@ -170,7 +182,7 @@ const getCollections = async (req, res) => {
     return res.status(500).json({ error: 'Internal server error' });
   }
 };
-   
+
 const getCollectionById = async (req, res) => {
   const { id } = req.params;
 
@@ -199,66 +211,66 @@ const getCollectionById = async (req, res) => {
       });
     }
 
-        const row = result.rows[0]; 
+    const row = result.rows[0];
 
-        const collection = {
-            stac_version: '1.0.0',
-            type: 'Collection',
-            id: row.id.toString(),
-            title: row.title,
-            description: row.description,
-            extent: {
-                spatial: {
-                    // Compose BBox from the calculated coordinates
-                    bbox: [[row.xmin, row.ymin, row.xmax, row.ymax]]
-                },
-                temporal: {
-                    interval: [[row.temporal_start, row.temporal_end]]
-                }
-            },
-            license: row.license,
-            keywords: row.keywords,
-            providers: row.providers && Array.isArray(row.providers) ? row.providers : [],
-            
-            summaries: {
-              // Omit doi when not present; coerce single values to arrays per STAC spec
-              ...(row.doi ? { doi: Array.isArray(row.doi) ? row.doi : [row.doi] } : {}),
-              ...(row.platform_summary ? { platform: Array.isArray(row.platform_summary) ? row.platform_summary : [row.platform_summary] } : {}),
-              ...(row.constellation_summary ? { constellation: Array.isArray(row.constellation_summary) ? row.constellation_summary : [row.constellation_summary] } : {}),
-              ...(row.gsd_summary ? { gsd: Array.isArray(row.gsd_summary) ? row.gsd_summary : [row.gsd_summary] } : {}),
-              ...(row.processing_level_summary ? { 'processing:level': Array.isArray(row.processing_level_summary) ? row.processing_level_summary : [row.processing_level_summary] } : {})
-            },
+    const collection = {
+      stac_version: '1.0.0',
+      type: 'Collection',
+      id: row.id.toString(),
+      title: row.title,
+      description: row.description,
+      extent: {
+        spatial: {
+          // Compose BBox from the calculated coordinates
+          bbox: [[row.xmin, row.ymin, row.xmax, row.ymax]]
+        },
+        temporal: {
+          interval: [[row.temporal_start, row.temporal_end]]
+        }
+      },
+      license: row.license,
+      keywords: row.keywords,
+      providers: row.providers && Array.isArray(row.providers) ? row.providers : [],
 
-          links: [
-            {
-              rel: 'self',
-              href: `/collections/${row.id}`,
-              type: 'application/json'
-            },
-            {
-              rel: 'root',
-              href: '/',
-              type: 'application/json'
-            },
-            {
-              rel: 'parent',
-              href: '/collections',
-              type: 'application/json'
-            },
-            ...(row.source_url
-              ? [{ rel: 'via', href: row.source_url, type: 'text/html' }]
-              : [])
-          ]
+      summaries: {
+        // Omit doi when not present; coerce single values to arrays per STAC spec
+        ...(row.doi ? { doi: Array.isArray(row.doi) ? row.doi : [row.doi] } : {}),
+        ...(row.platform_summary ? { platform: Array.isArray(row.platform_summary) ? row.platform_summary : [row.platform_summary] } : {}),
+        ...(row.constellation_summary ? { constellation: Array.isArray(row.constellation_summary) ? row.constellation_summary : [row.constellation_summary] } : {}),
+        ...(row.gsd_summary ? { gsd: Array.isArray(row.gsd_summary) ? row.gsd_summary : [row.gsd_summary] } : {}),
+        ...(row.processing_level_summary ? { 'processing:level': Array.isArray(row.processing_level_summary) ? row.processing_level_summary : [row.processing_level_summary] } : {})
+      },
 
-        };
+      links: [
+        {
+          rel: 'self',
+          href: `/collections/${row.id}`,
+          type: 'application/json'
+        },
+        {
+          rel: 'root',
+          href: '/',
+          type: 'application/json'
+        },
+        {
+          rel: 'parent',
+          href: '/collections',
+          type: 'application/json'
+        },
+        ...(row.source_url
+          ? [{ rel: 'via', href: row.source_url, type: 'text/html' }]
+          : [])
+      ]
 
-        
-        res.json(collection);
+    };
 
-    } catch (err) {
-        console.error('Error fetching collection by id: ', err);
-        res.status(500).json({ error: 'Internal server error' });
-    }
+
+    res.json(collection);
+
+  } catch (err) {
+    console.error('Error fetching collection by id: ', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
 };
 
 module.exports = { getCollections, getCollectionById };

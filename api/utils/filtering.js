@@ -332,6 +332,11 @@ const cql2JsonToAst = (node) => {
     return { type: 'Literal', value: node };
   }
 
+  // BBox geometry: { type: "BBox", value: [...] }
+  if (node && typeof node === 'object' && node.type === 'BBox' && Array.isArray(node.value)) {
+    return { type: 'Literal', value: node };
+  }
+
   // property reference: { property: "title" }
   if (node && typeof node === 'object' && !Array.isArray(node) && node.property) {
     return { type: 'Identifier', name: node.property };
@@ -384,6 +389,18 @@ const cql2JsonToAst = (node) => {
       if (args.length !== 2) throw new Error(`${op} requires 2 args`);
       return {
         type: 'Compare',
+        op,
+        left: cql2JsonToAst(args[0]),
+        right: cql2JsonToAst(args[1]),
+      };
+    }
+
+    // Spatial operators: s_intersects, s_contains, s_overlaps, s_within
+    const spatialOps = ['S_INTERSECTS', 'S_CONTAINS', 'S_OVERLAPS', 'S_WITHIN'];
+    if (spatialOps.includes(op)) {
+      if (args.length !== 2) throw new Error(`${op} requires 2 args`);
+      return {
+        type: 'Spatial',
         op,
         left: cql2JsonToAst(args[0]),
         right: cql2JsonToAst(args[1]),
