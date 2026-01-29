@@ -104,7 +104,7 @@ export async function upsertCollection(data) {
       ST_MakeEnvelope($13, $14, $15, $16, 4326),
       $17, $18,
       NOW(),
-      $19::jsonb
+      $19::jsonb,
       $20
     )
     ON CONFLICT (id) DO UPDATE SET
@@ -123,7 +123,7 @@ export async function upsertCollection(data) {
       temporal_start = EXCLUDED.temporal_start,
       temporal_end = EXCLUDED.temporal_end,
       last_crawled_timestamp = NOW(),
-      raw_json = EXCLUDED.raw_json;
+      raw_json = EXCLUDED.raw_json,
       stac_extensions = EXCLUDED.stac_extensions;
   `;
 
