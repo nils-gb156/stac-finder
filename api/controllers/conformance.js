@@ -9,10 +9,14 @@ const getConformance = async (req, res) => {
                 'https://api.stacspec.org/v1.0.0-rc.1/collection-search#free-text',
                 'https://api.stacspec.org/v1.0.0-rc.1/collection-search#filter',
                 'https://api.stacspec.org/v1.1.0/collection-search#sort',
+                'http://www.opengis.net/spec/cql2/1.0/conf/basic-cql2',
                 'https://api.stacspec.org/v1.0.0/collection-search#fields',
                 'http://www.opengis.net/spec/cql2/1.0/conf/cql2-text',
                 'http://www.opengis.net/spec/cql2/1.0/conf/cql2-json',
                 'http://www.opengis.net/spec/cql2/1.0/conf/basic-spatial-functions',
+                'http://www.opengis.net/spec/cql2/1.0/conf/spatial-functions',
+                'http://www.opengis.net/spec/cql2/1.0/conf/advanced-comparison-operators',
+                'http://www.opengis.net/spec/cql2/1.0/conf/temporal-functions',
                 'http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/collections',
                 'http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/core'
             ]
