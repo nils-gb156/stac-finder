@@ -107,6 +107,22 @@ const createPaginationLinks = (baseUrl, query, offset, limit, resultCount, hasMo
         type: 'application/json'
     });
 
+    // Add 'last' link if numberMatched is available and > 0
+    // numberMatched is passed as resultCount if hasMoreResults is not null, otherwise not available
+    // To be robust, expect numberMatched as a property on query if needed
+    const numberMatched = query && typeof query.numberMatched === 'number' ? query.numberMatched : null;
+    if (numberMatched && numberMatched > 0) {
+        // Calculate last page offset (zero-based, so subtract 1)
+        const lastPageOffset = Math.floor((numberMatched - 1) / limit) * limit;
+        const lastToken = createPaginationToken(lastPageOffset);
+        const lastQuery = { ...query, token: lastToken, limit };
+        links.push({
+            rel: 'last',
+            href: `${baseUrl}${buildQueryString(lastQuery)}`,
+            type: 'application/json'
+        });
+    }
+
     // Determine if there are more results
     const shouldShowNext = hasMoreResults !== null 
         ? hasMoreResults 
