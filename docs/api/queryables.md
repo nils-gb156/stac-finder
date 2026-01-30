@@ -33,7 +33,7 @@ Returns a JSON object conforming to the Queryables specification. The response i
 |--------------------|----------------|-----------------------------------------------------|------------------------------------------------|-----------------------|
 | `title`            | string         | Collection title for free-text search                | Used with `q` parameter                        | -                     |
 | `description`      | string         | Collection description for free-text search          | Used with `q` parameter                        | -                     |
-| `license`          | string         | Data license identifier (dynamic, from DB)           | `license = 'CC-BY-4.0'`                        | -                     |
+| `license`          | string         | Data license identifier (dynamic, from DB)           | `license = 'CC-BY-4.0'`                        |  Dynamic from DB                        |
 | `doi`              | string         | Digital Object Identifier                           | `doi = '10.1234/abc'`                          | -                     |
 | `platform`         | string         | Platform name (dynamic, from DB)                    | `platform = 'Sentinel-2A'`                     | Dynamic from DB        |
 | `processingLevel`  | string         | Processing level (dynamic, from DB)                 | `processingLevel = 'L2A'`                      | Dynamic from DB        |
