@@ -8,7 +8,7 @@ import {
     urlData
 } from "../queueManager/queue_manager.js";
 
-import { loadUncrawledSources } from "../sourceManager/source_manager.js";
+import { loadUncrawledSources, loadSourcesForCrawling } from "../sourceManager/source_manager.js";
 import { handleSTACObject, crawlStacApi, fetchWithRetry } from "./crawler_functions.js"
 import { validateQueueEntry } from "../validation/queue_validator.js";
 import { validateStacObject } from "../validation/json_validator.js";
@@ -77,7 +77,8 @@ export async function startCrawler() {
     resetUrlData()
 
     // we now load sources manually to check their type.
-    const sources = await loadUncrawledSources(); //
+    // Only load sources that have never been crawled or were last crawled more than 7 days ago
+    const sources = await loadSourcesForCrawling(7);
     
     logger.info(`Found ${sources.length} sources to process.`);
 
