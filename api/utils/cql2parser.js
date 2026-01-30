@@ -20,10 +20,36 @@ function tokenize(input) {
       }
   
       // operators
-      if (c === '!' && input[i + 1] === '=') { tokens.push({ type: 'OP', value: '!=' }); i += 2; continue; }
-      if (c === '=') { tokens.push({ type: 'OP', value: '=' }); i++; continue; }
-      if (c === '<') { tokens.push({ type: 'OP', value: '<' }); i++; continue; }
-      if (c === '>') { tokens.push({ type: 'OP', value: '>' }); i++; continue; }
+      if (c === '<' && input[i + 1] === '>') {
+         tokens.push({ type: 'OP', value: '<>' });
+         i += 2;
+        continue;
+      }
+
+      if (c === '!' && input[i + 1] === '=') {
+        tokens.push({ type: 'OP', value: '!=' });
+        i += 2;
+        continue;
+      }
+
+      if (c === '=') {
+        tokens.push({ type: 'OP', value: '=' });
+        i++;
+        continue;
+      }
+
+      if (c === '<') {
+        tokens.push({ type: 'OP', value: '<' });
+        i++;
+        continue;
+      }
+
+      if (c === '>') {
+        tokens.push({ type: 'OP', value: '>' });
+        i++;
+        continue;
+      }
+
   
       // string literal (single quotes)
       if (c === "'") {
