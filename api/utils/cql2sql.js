@@ -23,7 +23,11 @@ function astToSql(ast, queryableMap, params) {
     }
 
     const col = q.column;
-    const op = node.op === '!=' ? '<>' : node.op;
+    const op =
+      node.op === '!=' || node.op === '<>'
+        ? '<>'
+        : node.op;
+
 
     // LIKE only for text
     if (node.op === 'LIKE') {
