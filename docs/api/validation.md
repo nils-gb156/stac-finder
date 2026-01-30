@@ -13,6 +13,8 @@ npm run validate -- <url>
 ## Examples
 
 ```bash
+cd api
+
 # Validate landing page
 npm run validate -- http://localhost:4000/
 

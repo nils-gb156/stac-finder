@@ -12,13 +12,18 @@ const getCollections = async (req, res) => {
     let sql =
       'SELECT c.id, c.title, c.description, c.keywords, c.license, ' +
       'c.temporal_start, c.temporal_end, c.providers, ' +
+      'c.doi, c.platform_summary, c.constellation_summary, c.gsd_summary, c.processing_level_summary, ' + 
       '(SELECT url FROM test.sources WHERE id = c.source_id) AS source_url, ' +
       'ST_AsGeoJSON(c.spatial_extent)::json as spatial_extent ' +
       'FROM test.collections c';
 
+    // For numberMatched: build a separate COUNT(*) query with the same WHERE conditions
+    let countSql = 'SELECT COUNT(*) FROM test.collections c';
 
     const queryParams = [];
     const whereParts = [];
+
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
 
     // --- Text search (q=...) ---
     const { whereClause: searchWhere, params: searchParams, error: searchError } = parseTextSearch(req.query.q);
@@ -88,7 +93,9 @@ const getCollections = async (req, res) => {
 
     // Apply WHERE if any
     if (whereParts.length > 0) {
-      sql += ` WHERE ${whereParts.join(' AND ')}`;
+      const whereClause = ` WHERE ${whereParts.join(' AND ')}`;
+      sql += whereClause;
+      countSql += whereClause;
     }
 
     // --- Sorting ---
@@ -117,6 +124,10 @@ const getCollections = async (req, res) => {
     const fetchLimit = limit + 1;
     sql += ` LIMIT ${fetchLimit} OFFSET ${offset}`;
 
+    // Execute the COUNT query to determine numberMatched
+    const countResult = await db.query(countSql, queryParams);
+    const numberMatched = parseInt(countResult.rows[0].count, 10);
+
     const result = await db.query(sql, queryParams);
 
     // Check if there are more results than requested
@@ -136,6 +147,29 @@ const getCollections = async (req, res) => {
         }
       }
 
+      // Build summaries only with non-empty arrays or valid values
+      const summaries = {};
+      if (row.doi) {
+        const val = Array.isArray(row.doi) ? row.doi : [row.doi];
+        if (val.length > 0 && val[0] != null && val[0] !== '') summaries.doi = val;
+      }
+      if (row.platform_summary) {
+        const val = Array.isArray(row.platform_summary) ? row.platform_summary : [row.platform_summary];
+        if (val.length > 0 && val[0] != null && val[0] !== '') summaries.platform = val;
+      }
+      if (row.constellation_summary) {
+        const val = Array.isArray(row.constellation_summary) ? row.constellation_summary : [row.constellation_summary];
+        if (val.length > 0 && val[0] != null && val[0] !== '') summaries.constellation = val;
+      }
+      if (row.gsd_summary) {
+        const val = Array.isArray(row.gsd_summary) ? row.gsd_summary : [row.gsd_summary];
+        if (val.length > 0 && val[0] != null && val[0] !== '') summaries.gsd = val;
+      }
+      if (row.processing_level_summary) {
+        const val = Array.isArray(row.processing_level_summary) ? row.processing_level_summary : [row.processing_level_summary];
+        if (val.length > 0 && val[0] != null && val[0] !== '') summaries['processing:level'] = val;
+      }
+
       return {
         stac_version: '1.0.0',
         type: 'Collection',
@@ -149,23 +183,33 @@ const getCollections = async (req, res) => {
         license: row.license,
         keywords: row.keywords,
         providers: row.providers && Array.isArray(row.providers) ? row.providers : [],
+        ...(Object.keys(summaries).length > 0 ? { summaries } : {}),
         links: [
           { rel: 'self', 
-            href: `/collections/${row.id}`, 
-            type: 'application/json' 
+            href: `${baseUrl}/collections/${row.id}`, 
+            type: 'application/json' ,
+            title: 'This document'
           },
           ...(row.source_url
-            ? [{ rel: 'via', href: row.source_url, type: 'text/html' }]
+            ? [{ rel: 'via', 
+              href: row.source_url, 
+              type: 'text/html',
+              title: 'Source url' }]
             : [])
         ]
-
-
       };
     });
 
-    const links = createPaginationLinks('/collections', req.query, offset, limit, collections.length, hasMoreResults);
-
-    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    // Pass numberMatched in the query object so 'last' link can be generated
+    const links = createPaginationLinks(
+      `${baseUrl}/collections`,
+      { ...req.query },
+      offset,
+      limit,
+      collections.length,
+      hasMoreResults,
+      numberMatched
+    );
 
     // add querybales link
     links.push({
@@ -175,7 +219,9 @@ const getCollections = async (req, res) => {
       title: "Queryables for collection search"
     });
 
-    return res.json({ collections, links });
+    // numberReturned: number of collections actually returned
+    const numberReturned = collections.length;
+    return res.json({ collections, links, numberReturned, numberMatched });
 
   } catch (err) {
     console.error('Error fetching collections: ', err);
@@ -185,6 +231,7 @@ const getCollections = async (req, res) => {
 
 const getCollectionById = async (req, res) => {
   const { id } = req.params;
+  const baseUrl = `${req.protocol}://${req.get('host')}`;
 
   try {
     const query = `
@@ -213,6 +260,29 @@ const getCollectionById = async (req, res) => {
 
     const row = result.rows[0];
 
+    // Build summaries only with non-empty arrays or valid values
+    const summaries = {};
+    if (row.doi) {
+      const val = Array.isArray(row.doi) ? row.doi : [row.doi];
+      if (val.length > 0 && val[0] != null && val[0] !== '') summaries.doi = val;
+    }
+    if (row.platform_summary) {
+      const val = Array.isArray(row.platform_summary) ? row.platform_summary : [row.platform_summary];
+      if (val.length > 0 && val[0] != null && val[0] !== '') summaries.platform = val;
+    }
+    if (row.constellation_summary) {
+      const val = Array.isArray(row.constellation_summary) ? row.constellation_summary : [row.constellation_summary];
+      if (val.length > 0 && val[0] != null && val[0] !== '') summaries.constellation = val;
+    }
+    if (row.gsd_summary) {
+      const val = Array.isArray(row.gsd_summary) ? row.gsd_summary : [row.gsd_summary];
+      if (val.length > 0 && val[0] != null && val[0] !== '') summaries.gsd = val;
+    }
+    if (row.processing_level_summary) {
+      const val = Array.isArray(row.processing_level_summary) ? row.processing_level_summary : [row.processing_level_summary];
+      if (val.length > 0 && val[0] != null && val[0] !== '') summaries['processing:level'] = val;
+    }
+
     const collection = {
       stac_version: '1.0.0',
       type: 'Collection',
@@ -231,37 +301,38 @@ const getCollectionById = async (req, res) => {
       license: row.license,
       keywords: row.keywords,
       providers: row.providers && Array.isArray(row.providers) ? row.providers : [],
-
-      summaries: {
-        // Omit doi when not present; coerce single values to arrays per STAC spec
-        ...(row.doi ? { doi: Array.isArray(row.doi) ? row.doi : [row.doi] } : {}),
-        ...(row.platform_summary ? { platform: Array.isArray(row.platform_summary) ? row.platform_summary : [row.platform_summary] } : {}),
-        ...(row.constellation_summary ? { constellation: Array.isArray(row.constellation_summary) ? row.constellation_summary : [row.constellation_summary] } : {}),
-        ...(row.gsd_summary ? { gsd: Array.isArray(row.gsd_summary) ? row.gsd_summary : [row.gsd_summary] } : {}),
-        ...(row.processing_level_summary ? { 'processing:level': Array.isArray(row.processing_level_summary) ? row.processing_level_summary : [row.processing_level_summary] } : {})
-      },
-
+      ...(Object.keys(summaries).length > 0 ? { summaries } : {}),
       links: [
         {
           rel: 'self',
-          href: `/collections/${row.id}`,
+          href: `${baseUrl}/collections/${row.id}`,
           type: 'application/json'
         },
         {
           rel: 'root',
-          href: '/',
-          type: 'application/json'
+          href: `${baseUrl}`,
+          type: 'application/json',
+          title: 'STACFinder API'
         },
         {
           rel: 'parent',
-          href: '/collections',
-          type: 'application/json'
+          href: `${baseUrl}`,
+          type: 'application/json',
+          title: 'STACFinder API'
+        },
+        {
+          rel: 'http://www.opengis.net/def/rel/ogc/1.0/queryables',
+          type: 'application/schema+json',
+          href: `${baseUrl}/collections/queryables`,
+          title: "Queryables for collection search"
         },
         ...(row.source_url
-          ? [{ rel: 'via', href: row.source_url, type: 'text/html' }]
+          ? [{ rel: 'via', 
+               href: row.source_url, 
+               type: 'text/html',
+               title: 'Source url' }]
           : [])
       ]
-
     };
 
 

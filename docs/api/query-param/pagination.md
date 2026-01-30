@@ -43,8 +43,9 @@ Make a request without a token to get the first page:
 GET /collections?limit=20
 ```
 
+
 ### Response Structure
-The API returns a response with `links` array containing pagination links:
+The API returns a response with a `links` array containing pagination links:
 
 ```json
 {
@@ -56,8 +57,23 @@ The API returns a response with `links` array containing pagination links:
       "type": "application/json"
     },
     {
+      "rel": "first",
+      "href": "/collections?limit=20",
+      "type": "application/json"
+    },
+    {
+      "rel": "last",
+      "href": "/collections?limit=20&token=abc",
+      "type": "application/json"
+    },
+    {
       "rel": "next",
       "href": "/collections?limit=20&token=xyz",
+      "type": "application/json"
+    },
+    {
+      "rel": "prev",
+      "href": "/collections?limit=20&token=uvw",
       "type": "application/json"
     }
   ]
@@ -65,11 +81,16 @@ The API returns a response with `links` array containing pagination links:
 ```
 
 ### Navigation
+
+- **First page**: Follow the `rel: "first"` link to jump to the first page (no token)
+- **Last page**: Follow the `rel: "last"` link to jump to the last page (token for last page)
 - **Next page**: Follow the `rel: "next"` link if present
 - **Previous page**: Follow the `rel: "prev"` link if present
 - **Current page**: The `rel: "self"` link always points to the current request
 
 ### Link Presence Rules
+- **`first` link**: Always present, points to the first page (no token)
+- **`last` link**: Present if the total number of results is known, points to the last page (with token)
 - **`next` link**: Present only if there are more results available (full page was returned)
 - **`prev` link**: Present only if not on the first page (offset > 0)
 - **`self` link**: Always present
