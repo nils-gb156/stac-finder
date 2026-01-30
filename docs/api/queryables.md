@@ -11,7 +11,7 @@ The `/collections/queryables` endpoint provides a JSON Schema describing all fie
 
 ## GET /collections/queryables
 
-Returns a Queryables object describing all fields available for filtering collections. Enum values for `platform`, `processingLevel`, `gsd`, and `provider` are dynamically derived from the database and always reflect the current data.
+Returns a Queryables object describing all fields available for filtering collections. Enum values for `platform`, `processingLevel`, `constellation`, `gsd`, and `provider` are dynamically derived from the database and always reflect the current data.
 
 ### Request
 
@@ -39,6 +39,7 @@ Returns a JSON object conforming to the Queryables specification. The response i
 | `processingLevel`  | string         | Processing level (dynamic, from DB)                 | `processingLevel = 'L2A'`                      | Dynamic from DB        |
 | `gsd`              | number         | Ground Sampling Distance (dynamic, from DB, numeric)| `gsd = 10`                                     | Dynamic from DB        |
 | `provider`         | string         | Data provider name (dynamic, from DB)               | `provider = 'DLR'`                             | Dynamic from DB        |
+| `constellation`     | string         | Satellitenkonstellation (dynamic, from DB)          | `constellation = 'sentinel-2'`                 | Dynamic from DB        |
 | `temporal_start`   | string (date-time) | Start of temporal extent                        | `temporal_start >= '2020-01-01T00:00:00Z'`     | -                     |
 | `temporal_end`     | string (date-time) | End of temporal extent (nullable)               | `temporal_end <= '2022-12-31T23:59:59Z'`       | -                     |
 | `spatial_extent`   | geometry-any   | Geometry for spatial filtering                      | Used with `bbox` parameter                      | -                     |
@@ -90,7 +91,7 @@ Use the `datetime` parameter (corresponds to `temporal_start` and `temporal_end`
 
 ## Dynamic Enum Values
 
-The fields `platform`, `processingLevel`, `gsd`, and `provider` have their possible values (enums) dynamically derived from the current database content. This ensures that filter options always reflect the available data. The API response and JSON Schema are updated accordingly.
+The fields `platform`, `processingLevel`, `constellation`, `gsd`, and `provider` have their possible values (enums) dynamically derived from the current database content. This ensures that filter options always reflect the available data. The API response and JSON Schema are updated accordingly.
 
 ## OGC Conformance
 
