@@ -18,10 +18,10 @@ services:
   api:
     container_name: stac-api
     build:
-      context: .
+      context: ./api
       dockerfile: Dockerfile
     ports:
-      - "4000:3000"
+      - "4000:4000"
     env_file:
       - ./api/.env
     volumes:
@@ -45,7 +45,7 @@ services:
     ports:
       - "8080:8080"
     environment:
-      - VUE_APP_API_URL=http://api:3000 
+      - VUE_APP_API_URL=http://api:4000 
     volumes: # delete volumes for production 
       - ./web-ui:/app 
       - /app/node_modules
