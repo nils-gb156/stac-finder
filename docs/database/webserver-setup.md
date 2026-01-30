@@ -76,7 +76,6 @@ CREATE TABLE IF NOT EXISTS stac.collections (
     source_id integer REFERENCES stac.sources(id) ON DELETE SET NULL,
     last_crawled_timestamp timestamptz DEFAULT now()
 );
-
 ```
 
 ## User and Permission Management
