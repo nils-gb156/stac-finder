@@ -29,6 +29,8 @@ const getQueryables = async (req, res) => {
         const providerResult = await db.query(`SELECT DISTINCT provider->>'name' AS provider FROM test.collections, LATERAL jsonb_array_elements(providers) AS provider WHERE providers IS NOT NULL ORDER BY provider`);
         const providerEnum = providerResult.rows.map(row => row.provider).filter(Boolean);
 
+        const keywordsResult = await db.query('SELECT DISTINCT UNNEST(keywords) AS keyword FROM test.collections WHERE keywords IS NOT NULL ORDER BY keyword');
+        const keywordsEnum = keywordsResult.rows.map(row => row.keyword).filter(Boolean);
 
         const queryables = {
             $schema: 'https://json-schema.org/draft/2020-12/schema',
@@ -110,6 +112,12 @@ const getQueryables = async (req, res) => {
                     title: 'Provider',
                     enum: providerEnum
                 },
+                keywords: {
+                    description: '{eo:keywords}',
+                    type: 'string',
+                    title: 'Keyword',
+                    enum: keywordsEnum
+                }
             }
         };
 
