@@ -1,5 +1,20 @@
 services:
 
+  # Crawler Service
+  crawler:
+    container_name: stac-crawler
+    build:
+      context: .
+      dockerfile: crawler/Dockerfile
+    env_file:
+      - ./crawler/.env
+    volumes:
+      - ./crawler:/app/crawler # delete for production
+      - ./crawler/logs:/app/crawler/logs
+    depends_on:
+      - api
+    restart: unless-stopped
+
   # pgAdmin Web Interface
   pgadmin:
     image: dpage/pgadmin4:latest

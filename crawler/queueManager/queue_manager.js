@@ -26,14 +26,23 @@ export const urlData = {
     parentUrls : []
 }
 
+/**
+ * @function resetUrlData
+ * resets the URLData Object
+ */
 export function resetUrlData() {
     urlData.titles = []
     urlData.urls = []
     urlData.parentUrls = [] 
 }
 
+/**
+ * @function saveInBackup
+ * saves the data that is in the URLData Object in a Backup File
+ */
 export function saveInBackup() {
 
+    //only create a Backup file if there is data in the URLData Object
     if (urlData.urls.length > 0) {
         fs.mkdirSync(path.dirname(backupFilePath), { recursive: true })
         fs.writeFileSync(backupFilePath, JSON.stringify(urlData))
@@ -55,13 +64,7 @@ export function saveInBackup() {
 export async function addToQueue(titles, urls, parentUrls = null) {
 
     try {
-        //upload title and url
-        // await query(`
-        //     INSERT INTO stac."urlQueue" (title_of_source, url_of_source, parent_url)
-        //     VALUES ($1, $2, $3)`,
-        //     [title, url, parentUrl]
-        // )
-
+        //insert the data to the queue
         const res = await query(`
             INSERT INTO stac."urlQueue" (title_of_source, url_of_source, parent_url)
             SELECT * FROM UNNEST($1::text[], $2::text[], $3::text[])
