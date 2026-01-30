@@ -16,6 +16,9 @@ const getQueryables = async (req, res) => {
 
         const processingLevelResult = await db.query('SELECT DISTINCT UNNEST(processing_level_summary) AS processing_level FROM test.collections WHERE processing_level_summary IS NOT NULL ORDER BY processing_level');
         const processingLevelEnum = processingLevelResult.rows.map(row => row.processing_level).filter(Boolean);
+        
+        const constellationResult = await db.query('SELECT DISTINCT UNNEST(constellation_summary) AS constellation FROM test.collections WHERE constellation_summary IS NOT NULL ORDER BY constellation');
+        const constellationEnum = constellationResult.rows.map(row => row.constellation).filter(Boolean);
 
         const gsdResult = await db.query('SELECT DISTINCT jsonb_array_elements_text(gsd_summary) AS gsd FROM test.collections WHERE gsd_summary IS NOT NULL');
         const gsdEnum = gsdResult.rows
@@ -88,6 +91,12 @@ const getQueryables = async (req, res) => {
                     title: "Processing level",
                     type: "string",
                     enum: processingLevelEnum
+                },
+                constellation: {
+                    description: "{eo:constellation}",
+                    title: "Constellation",
+                    type: "string",
+                    enum: constellationEnum
                 },
                 gsd: {
                     description: "{eo:gsd}",
