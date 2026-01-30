@@ -11,6 +11,9 @@ const getQueryables = async (req, res) => {
         const schemaId = `${baseUrl}${pathNoQuery}`;
 
         // Get all data to fill enums
+        const licenseResult = await db.query('SELECT DISTINCT license FROM test.collections WHERE license IS NOT NULL ORDER BY license');
+        const licenseEnum = licenseResult.rows.map(row => row.license).filter(Boolean);
+
         const platformResult = await db.query('SELECT DISTINCT UNNEST(platform_summary) AS platform FROM test.collections WHERE platform_summary IS NOT NULL ORDER BY platform');
         const platformEnum = platformResult.rows.map(row => row.platform).filter(Boolean);
 
@@ -57,7 +60,8 @@ const getQueryables = async (req, res) => {
                 license: {
                     type: 'string',
                     title: 'License',
-                    description: 'License string (e.g. CC-BY-4.0)'
+                    description: 'License string (e.g. CC-BY-4.0)',
+                    enum: licenseEnum
                 },
                 doi: {
                     type: 'string',
