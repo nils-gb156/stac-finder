@@ -37,7 +37,8 @@ The endpoint supports multiple query parameters that can be combined:
 
 ### Response
 
-Returns a JSON object containing an array of collections and pagination links.
+
+Returns a JSON object containing an array of collections, pagination links, and metadata fields.
 
 **Response Structure:**
 ```json
@@ -67,6 +68,13 @@ Returns a JSON object containing an array of collections and pagination links.
           "name": "string"
         }
       ],
+      "summaries": {
+        "doi": ["string"],
+        "platform": ["string"],
+        "constellation": ["string"],
+        "gsd": [number],
+        "processing:level": ["string"]
+      },
       "links": [
         {
           "rel": "self",
@@ -83,11 +91,28 @@ Returns a JSON object containing an array of collections and pagination links.
       "type": "application/json"
     },
     {
+      "rel": "first",
+      "href": "/collections?limit=10",
+      "type": "application/json"
+    },
+    {
+      "rel": "last",
+      "href": "/collections?limit=10&token=abc",
+      "type": "application/json"
+    },
+    {
       "rel": "next",
       "href": "/collections?limit=10&token=xyz",
       "type": "application/json"
+    },
+    {
+      "rel": "prev",
+      "href": "/collections?limit=10&token=uvw",
+      "type": "application/json"
     }
-  ]
+  ],
+  "numberReturned": 10,
+  "numberMatched": 123
 }
 ```
 
@@ -105,8 +130,10 @@ Returns a JSON object containing an array of collections and pagination links.
 | `collections[].license` | string | Collection license |
 | `collections[].keywords` | array | Collection keywords for discovery |
 | `collections[].providers` | array | Data providers information |
-| `collections[].links` | array | Links to related resources (self) |
-| `links` | array | Pagination links (self, next, prev) |
+| `collections[].summaries` | object | Summary statistics of item properties (only present if non-empty) |
+| `links` | array | Pagination links (self, first, last, next, prev) |
+| `numberReturned` | integer | Number of collections actually returned |
+| `numberMatched` | integer | Total number of collections matching the query |
 
 ### Examples
 
