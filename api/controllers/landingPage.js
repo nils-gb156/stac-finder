@@ -45,11 +45,12 @@ const getLandingPage = async (req, res) => {
                     title: "Metadata about the feature collections"
                 },
                 {
-                    rel: 'service-queryables',
-                    type: 'application/schema+json',
+                    rel: "http://www.opengis.net/def/rel/ogc/1.0/queryables",
+                    type: "application/schema+json",
                     href: `${baseUrl}/collections/queryables`,
                     title: "Queryables for collection search"
                 },
+
                 {
                     rel: 'service-desc',
                     type: 'application/vnd.oai.openapi+json;version=3.0',
