@@ -2,14 +2,13 @@
 
 This guide explains how to use the STAC Finder Crawler.
 
-The crawler runs on our STACFinder Server TODO:Server Zugang erklären
- <!-- and needs a connection to the STAC Finder database. You can find deatils about the database access in the [Database Documentation](../database/database-access.md) -->
+The crawler runs on our STACFinder Server
+
+TODO: Docker start beschreiben
 
 ---
 
 TODO: Falls die Ordnerstruktur geändert wird, müssen wir die Pfade anpassen.
-
-<!-- To start the crawling process, make sure that you have a working connection to the database. -->
 
 ## How to access the crawler via our server
 To controll the crawler, open your terminal and get a connection to the server by typing:
@@ -24,41 +23,24 @@ We use the dependencies ajv, ajv-formats, dotenv, pg, pm2 and winston. To instal
 ## Controling the Crawling Process
 *Start the crawling process for the first time:*
 ```bash
-pm2 start entrypoint.js
+pm2 start STACFinderCrawler
 ```
 *Stop the crawling process:*
 ```bash
-pm2 stop entrypoint.js
-```
-*Restart the crawling process:*
-```bash
-pm2 restart entrypoint.js
+pm2 stop STACFinderCrawler
 ```
 *To get informations about the crawling process:*
 ```bash
 pm2 logs
 ```
-
-TODO: funktioniert das alles so?
-
 ## Logging
-Details about the crawling process will be displayed in the terminal, when you open the logs as described above.
-There are three diffrent types of informations:
+More Informations about Logs
+[Logging Documentation](./crawler-logging)
 
-{timestamp} info: Provides information about the crawling process, such as "Crawler started" or "Added {number} URL's to the database"
-
-{timestamp} warn: Shows Problems during the crawling process. These Problems could be invalid STAC-Objects or failed attempts to crawl a URL for example. They typically do not significantly impact the crawling result.
-
-{timestamp} error: Shows serious Problems during the crawling process. Better stop the crawling process, as these errors often lead to a data loss, so that the affected collections can no longer be found later via the STACFinder. Depending on the error message, restart the crawling process or contact us if you experience persistent errors.
-
-## The Data Management
-We use the STACFinder Database for collecting data during the crawling process. For this purpose, we have four tables:
-1. catalogs: table with the stac index catalogs
-2. urlQueue: table to save the queue of uncrawled urls
-3. sources: table to save informations about sources of collections
-4. collections: table to save informations about the crawled collections. These are the informations you can look at on the STACFinder Website.
-
-If you want to have a closer look on the collected data or our database, you can get access to our STACFinder Database as it is described in the [Database Documentation](../database/database-access.md).
+## Data Management
+More Informations about the Data Management
+[Data Management](./crawler-data-management)
+[Database Documentation](../database/)
 
 ## How does the crawler work?
 
