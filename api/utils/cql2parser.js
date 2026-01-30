@@ -94,9 +94,23 @@ function tokenize(input) {
     const parseLiteral = () => {
       const t = peek();
       if (!t) throw new Error('Expected literal but got EOF');
+    
+      // normal literals
       if (t.type === 'STRING') { pos++; return { type: 'Literal', value: t.value }; }
       if (t.type === 'NUMBER') { pos++; return { type: 'Literal', value: t.value }; }
-      // allow unquoted TRUE/FALSE/NULL if needed later
+    
+      // Support TIMESTAMP('...') and DATE('...') as literals (STAC browser style)
+      if (t.type === 'IDENT') {
+        const fn = String(t.value).toUpperCase();
+        if (fn === 'TIMESTAMP' || fn === 'DATE') {
+          pos++;          // consume IDENT
+          eat('(');
+          const s = eat('STRING').value;
+          eat(')');
+          return { type: 'Literal', value: s };
+        }
+      }
+    
       throw new Error(`Expected literal but got ${t.type}`);
     };
   
