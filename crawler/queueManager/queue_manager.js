@@ -108,25 +108,6 @@ export async function removeFromQueue(url){
 }
 
 /**
- * Clears the current queue (e.g. at start of crawler run).
- * @function clearQueue
- */
-export async function clearQueue() {
-    
-    try {
-        //delete data
-        await query(`
-            DELETE FROM stac."urlQueue"`)
-
-        //log deleted Data
-        logger.info(`cleared queue`)
-    } catch(err) {
-        //log error
-        logger.warn(`Did not cleared the queue because of the following error: ${err}`)
-    }
-}
-
-/**
  * function shows if a url is already in the queue
  * @param {string} url 
  * @returns {boolean} true - if the url is in the database
