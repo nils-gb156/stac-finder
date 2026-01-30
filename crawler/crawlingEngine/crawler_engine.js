@@ -115,17 +115,21 @@ export async function startCrawler() {
         //bring the data in the format needed to add it to the queue
         for (let data of STACIndexData) {
 
-            if (data.is_api) {
+            let isAPI = data.is_api
+
+            if (isAPI) {
                 await crawlStacApi(data.url, data.title)
             }
 
             //validate data
-            else if (validateQueueEntry(data.title, data.url)) {
-
-                //add the data to the array
-                urlData.titles.push(data.title)
-                urlData.urls.push(data.url)
-                urlData.parentUrls.push(null)
+            if (!isAPI) {
+                
+                if (validateQueueEntry(data.title, data.url)) {
+                    //add the data to the array
+                    urlData.titles.push(data.title)
+                    urlData.urls.push(data.url)
+                    urlData.parentUrls.push(null)
+                }
             }
         }
         
@@ -173,33 +177,34 @@ export async function startCrawler() {
             // Fetch STAC JSON with retry
             const STACObject = await fetchWithRetry(url)
 
-            //only continue if the object type is a Catalog, a Collection or a API
-            if (STACObject.type === "Catalog" || STACObject.type === "Collection") {
 
-                logger.info(`Crawling: ${url}`);
-                
-                // Only proceed if valid JSON was retrieved
-                if (validateStacObject(STACObject).valid) {
+            logger.info(`Crawling: ${url}`);
 
-                    //for Catalogs: get the child data and save the catalog data in the sources db
-                    //for Collections: get the child data, save the collection data in the collections and the sources db
-                    const childData = await handleSTACObject(STACObject, url, parentUrl)
+            //validate the stac Object
+            let valid = validateStacObject(STACObject).valid
+            let notIgnored = !validateStacObject(STACObject).isIgnored
+            
+            // Only proceed if valid JSON was retrieved
+            if (valid && notIgnored) {
 
-                    for(let child of childData) {
+                //for Catalogs: get the child data and save the catalog data in the sources db
+                //for Collections: get the child data, save the collection data in the collections and the sources db
+                const childData = await handleSTACObject(STACObject, url, parentUrl)
 
-                        //validate child data
-                        if(validateQueueEntry(child.title, child.url, url)) {
+                for(let child of childData) {
 
-                            //add the child data to the urlData
-                            urlData.titles.push(child.title)
-                            urlData.urls.push(child.url)
-                            urlData.parentUrls.push(url)
-                        }
+                    //validate child data
+                    if(validateQueueEntry(child.title, child.url, url)) {
+
+                        //add the child data to the urlData
+                        urlData.titles.push(child.title)
+                        urlData.urls.push(child.url)
+                        urlData.parentUrls.push(url)
                     }
-
-                } else {
-                        logger.warn("Warning: Invalid STAC object")
                 }
+
+            } else {
+                    logger.warn("Warning: Invalid STAC object")
             }
             
         } catch(err) {

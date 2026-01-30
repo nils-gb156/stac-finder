@@ -20,11 +20,17 @@ export function parseCollection(json, sourceId, crawledAt) {
     const timeInterval = json.extent?.temporal?.interval?.[0];
     const summaries = json.summaries || {};
 
+    // Replace slashes with underscores in the ID
+    let safeId = json.id;
+    if (typeof safeId === 'string') {
+        safeId = safeId.replace(/\//g, '_');
+    }
+    
     // Return the structured metadata object
     return {
         // Basic fields
-        id: json.id,
-        title: json.title || json.id,
+        id: safeId,
+        title: json.title || safeId,
         description: json.description || null,
 
         // Source info 

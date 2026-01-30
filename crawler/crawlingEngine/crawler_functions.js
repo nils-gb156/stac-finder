@@ -29,7 +29,13 @@ export async function fetchWithRetry(url, maxRetries = MAX_RETRIES) {
             clearTimeout(timeoutId);
 
             const status = response.status;
-            if (response.ok) return await response.json();
+            if (response.ok) {
+                try {
+                    return await response.json();
+                } catch (parseError) {
+                    throw new Error(`Failed to parse JSON: ${parseError.message}`);
+                }
+            }
 
             if (status === 504) {
                 throw new Error(`Fatal Server Error ${status}: Gateway Time-out - Will not retry.`);
@@ -103,14 +109,14 @@ export function makeHandleSTACObject(deps = {}) {
             }
 
             //depending on the type, run the following code:
-            if (STACObjectType == "Catalog") {
+            if (STACObjectType === "Catalog") {
 
                 //get the titles and urls of the childs
                 let childs = getChildURLsFn(STACObject, Link)
 
                 return childs
 
-            } else if (STACObjectType == "Collection") {
+            } else if (STACObjectType === "Collection") {
                 
                 //get the title and the urls of the childs
                 let childs = getChildURLsFn(STACObject, Link)
@@ -186,7 +192,6 @@ export function getChildURLs(STACObject, Link) {
         //process links that are marked as "child" and have a valid href
         if (link.rel === "child" && link.href) {
 
-            
             let childURL = []
             
             //build full child URL from parent URL
@@ -197,11 +202,15 @@ export function getChildURLs(STACObject, Link) {
                 continue
             }
             
-            //push the url and the title to the childURLs list
-            childURLs.push({
-                title: link.title || "no title", 
-                url: childURL
-            })
+            //dont push urls to the queue that have types like application/geo+json
+            if (link.type === "application/json" || link.type === undefined) {
+                //push the url and the title to the childURLs list
+                childURLs.push({
+                    title: link.title || "no title", 
+                    url: childURL
+                    }
+                )
+            }
         }
     }
 
