@@ -29,11 +29,6 @@ const getSortables = async (req, res) => {
                     title: 'Description',
                     description: 'Collection description'
                 },
-                license: {
-                    type: 'string',
-                    title: 'License',
-                    description: 'License string (e.g. CC-BY-4.0)'
-                },
                 temporal_start: {
                     type: 'string',
                     format: 'date-time',

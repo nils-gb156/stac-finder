@@ -33,6 +33,5 @@ Returns a JSON object conforming to the Sortables specification. The response in
 |--------------------|---------|------------------------------------|----------------------|
 | `title`            | string  | Collection title                   | `sortby=title`       |
 | `description`      | string  | Collection description             | `sortby=description` |
-| `license`          | string  | License string (e.g. CC-BY-4.0)    | `sortby=license`     |
 | `temporal_start`   | string  | Start of the temporal extent       | `sortby=temporal_start` |
 | `temporal_end`     | string  | End of the temporal extent         | `sortby=temporal_end`   |
