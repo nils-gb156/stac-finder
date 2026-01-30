@@ -11,7 +11,7 @@ The `/collections/queryables` endpoint provides a JSON Schema describing all fie
 
 ## GET /collections/queryables
 
-Returns a Queryables object describing all fields available for filtering collections. Enum values for `platform`, `processingLevel`, `constellation`, `gsd`, and `provider` are dynamically derived from the database and always reflect the current data.
+Returns a Queryables object describing all fields available for filtering collections. Enum values for `platform`, `processingLevel`, `constellation`, `gsd`, `keyword` and `provider` are dynamically derived from the database and always reflect the current data.
 
 ### Request
 
@@ -42,7 +42,7 @@ Returns a JSON object conforming to the Queryables specification. The response i
 | `constellation`     | string         | Satellitenkonstellation (dynamic, from DB)          | `constellation = 'sentinel-2'`                 | Dynamic from DB        |
 | `temporal_start`   | string (date-time) | Start of temporal extent                        | `temporal_start >= '2020-01-01T00:00:00Z'`     | -                     |
 | `temporal_end`     | string (date-time) | End of temporal extent (nullable)               | `temporal_end <= '2022-12-31T23:59:59Z'`       | -                     |
-| `spatial_extent`   | geometry-any   | Geometry for spatial filtering                      | Used with `bbox` parameter                      | -                     |
+| `keyword`           | string         | Keyword (dynamic, from DB)                          | `keyword = 'EU'`                             | Dynamic from DB        |
 
 ### Example: Retrieve Queryables Schema
 
