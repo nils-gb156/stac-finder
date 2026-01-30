@@ -279,7 +279,6 @@ The STAC API is accessible at `http://localhost:4000` and provides STAC 1.0.0 co
 The Crawler collects infromation of all the collections in the STAC Index Database and saves these informations in a database so that you can browse through these collections on our STACFinder Website.
 
 ### Usage
-<!-- To start the crawling process, start the docker container 'pgadmin' first and make sure that you have a working connection to our STACFINDER database. For more informations look at the [Database Documentation](docs/database/database-access.md).  -->
 
 The crawler runs on our STACFinder Server. 
 To controll the crawler, open your terminal and get a connection to the server by typing:
@@ -289,21 +288,15 @@ ssh stac-finder@finder.stacindex.org
 Enter the given password for the server.
 Then, navigate to the folder "crawler\" and make sure that all dependencies are installed. You will find more information about this in the [Crawler Documentation](/docs/crawler/crawler-documentation.md). 
 
-TODO: Server Zugang beschreiben???
-
-*Start the crawling process for the first time:*
+*Start the crawling process:*
 ```bash
-pm2 start entrypoint.js
+pm2 start STACFinderCrawler
 ```
 *Stop the crawling process:*
 ```bash
-pm2 stop entrypoint.js
+pm2 stop STACFinderCrawler
 ```
-*Restart the crawling process:*
-```bash
-pm2 restart entrypoint.js
-```
-*To get informations about the crawling process:*
+*Get informations about the crawling process:*
 ```bash
 pm2 logs
 ```
