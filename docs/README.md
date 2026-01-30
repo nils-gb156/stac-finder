@@ -21,8 +21,9 @@
 - [Validation](api/validation.md)
 
 ## Crawler Documentation
-
-...
+- [Crawler Documentation](./crawler/crawler-documentation.md)
+- [Data Management](./crawler/DataManagement)
+- [Logging](./crawler/crawler-logging)
 
 ## Web-UI Documentation
 
