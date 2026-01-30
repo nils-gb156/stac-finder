@@ -219,6 +219,14 @@ const getCollections = async (req, res) => {
       title: "Queryables for collection search"
     });
 
+    // add sortables link
+    links.push({
+      rel: "http://www.opengis.net/def/rel/ogc/1.0/sortables",
+      href: `${baseUrl}/collections/sortables`,
+      type: "application/schema+json",
+      title: "Sortables for collection search"
+    });
+
     // numberReturned: number of collections actually returned
     const numberReturned = collections.length;
     return res.json({ collections, links, numberReturned, numberMatched });
@@ -325,6 +333,12 @@ const getCollectionById = async (req, res) => {
           type: 'application/schema+json',
           href: `${baseUrl}/collections/queryables`,
           title: "Queryables for collection search"
+        },
+        {
+          rel: "http://www.opengis.net/def/rel/ogc/1.0/sortables",
+          type: "application/schema+json",
+          href: `${baseUrl}/collections/sortables`,
+          title: "Sortables for collection search"
         },
         ...(row.source_url
           ? [{ rel: 'via', 
