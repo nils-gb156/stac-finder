@@ -1,79 +1,97 @@
-const path = require('path');
-
+// api/controllers/queryables.js
 const getQueryables = async (req, res) => {
-  try {
-    res.type('application/schema+json');
-
-    const baseUrl = `${req.protocol}://${req.get('host')}`;
-    const pathNoQuery = req.originalUrl.split('?')[0];
-    const schemaId = `${baseUrl}${pathNoQuery}`;
-
-    const queryables = {
-      $schema: 'https://json-schema.org/draft/2020-12/schema',
-      $id: schemaId,
-
-      title: 'Collections Queryables',
-      description:
-        'JSON Schema describing the properties that can be used in filter expressions for /collections.',
-
-      type: 'object',
-      additionalProperties: false,
-
-      properties: {
-        id: {
-          type: 'string',
-          title: 'ID',
-          description: 'Collection identifier'
-        },
-        title: {
-          type: 'string',
-          title: 'Title',
-          description: 'Collection title'
-        },
-        description: {
-          type: 'string',
-          title: 'Description',
-          description: 'Collection description'
-        },
-        license: {
-          type: 'string',
-          title: 'License',
-          description: 'License string (e.g. CC-BY-4.0)'
-        },
-        doi: {
-          type: 'string',
-          title: 'DOI',
-          description: 'Digital Object Identifier'
-        },
-
-        temporal_start: {
-          type: 'string',
-          format: 'date-time',
-          title: 'Temporal start',
-          description: 'Start of the temporal extent'
-        },
-        temporal_end: {
-          type: 'string',
-          format: 'date-time',
-          title: 'Temporal end',
-          description: 'End of the temporal extent (may be null/open-ended)'
-        },
-
-        spatial_extent: {
-          title: 'Spatial extent',
-          description: 'Geometry used for spatial filtering',
-          'x-ogc-role': 'primary-geometry',
-          format: 'geometry-any'
+    try {
+      const queryables = {
+        type: 'Queryables',
+        title: 'Filterbare Felder für STAC-Collections',
+        description:
+          'Diese Ressource beschreibt alle Felder, nach denen in /collections gefiltert werden kann.',
+        properties: {
+          id: {
+            type: 'string',
+            title: 'ID',
+            description: 'Eindeutige Collection-ID'
+          },
+          title: {
+            type: 'string',
+            title: 'Titel',
+            description: 'Titel der Collection für Freitextsuche'
+          },
+          description: {
+            type: 'string',
+            title: 'Beschreibung',
+            description: 'Beschreibung der Collection für Freitextsuche'
+          },
+          keywords: {
+            type: 'array',
+            items: { type: 'string' },
+            title: 'Schlagworte',
+            description: 'Keywords zur thematischen Filterung'
+          },
+          license: {
+            type: 'string',
+            title: 'Lizenz',
+            description: 'Lizenz der Daten (z.B. CC-BY-4.0, proprietary)'
+          },
+          doi: {
+            type: 'string',
+            title: 'DOI',
+            description: 'Digital Object Identifier (falls vorhanden)'
+          },
+  
+          // Summaries / Arrays
+          platform_summary: {
+            type: 'array',
+            items: { type: 'string' },
+            title: 'Plattformen',
+            description: 'Satelliten/Plattformen (z.B. Sentinel-2, Landsat-8)'
+          },
+          constellation_summary: {
+            type: 'array',
+            items: { type: 'string' },
+            title: 'Konstellationen',
+            description: 'Satelliten-Konstellationen (z.B. Sentinel, Landsat)'
+          },
+          gsd_summary: {
+            type: 'array',
+            items: { type: 'string' },
+            title: 'Ground Sampling Distance',
+            description: 'Bodenauflösung der Daten (z.B. 10m, 30m)'
+          },
+          processing_level_summary: {
+            type: 'array',
+            items: { type: 'string' },
+            title: 'Verarbeitungslevel',
+            description: 'Verarbeitungsstufe der Daten (z.B. L1C, L2A)'
+          },
+  
+          spatial_extent: {
+            type: 'object',
+            title: 'Räumliche Ausdehnung',
+            description: 'Geometrie/Bounding Box für räumliche Filterung (GeoJSON Polygon)',
+            properties: {
+              type: { type: 'string' },
+              coordinates: { type: 'array' }
+            }
+          },
+  
+          temporal_extent: {
+            type: 'array',
+            items: { type: 'string', format: 'date-time' },
+            minItems: 2,
+            maxItems: 2,
+            title: 'Zeitliche Ausdehnung',
+            description: 'Zeitraum der Daten [Start, Ende] für zeitliche Filterung'
+          }
         }
-      }
-    };
-
-    return res.json(queryables);
-  } catch (err) {
-    console.error('Error fetching queryables: ', err);
-    return res.status(500).json({ error: 'Internal server error' });
-  }
-};
-
-module.exports = { getQueryables };
-
+      };
+  
+      res.json(queryables);
+    } catch (err) {
+      console.error('Error fetching queryables: ', err);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  };
+  
+  module.exports = { getQueryables };
+  
