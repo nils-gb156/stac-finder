@@ -1,97 +1,124 @@
-// api/controllers/queryables.js
+
+const db = require('../db');
+const path = require('path');
+
 const getQueryables = async (req, res) => {
     try {
-      const queryables = {
-        type: 'Queryables',
-        title: 'Filterbare Felder für STAC-Collections',
-        description:
-          'Diese Ressource beschreibt alle Felder, nach denen in /collections gefiltert werden kann.',
-        properties: {
-          id: {
-            type: 'string',
-            title: 'ID',
-            description: 'Eindeutige Collection-ID'
-          },
-          title: {
-            type: 'string',
-            title: 'Titel',
-            description: 'Titel der Collection für Freitextsuche'
-          },
-          description: {
-            type: 'string',
-            title: 'Beschreibung',
-            description: 'Beschreibung der Collection für Freitextsuche'
-          },
-          keywords: {
-            type: 'array',
-            items: { type: 'string' },
-            title: 'Schlagworte',
-            description: 'Keywords zur thematischen Filterung'
-          },
-          license: {
-            type: 'string',
-            title: 'Lizenz',
-            description: 'Lizenz der Daten (z.B. CC-BY-4.0, proprietary)'
-          },
-          doi: {
-            type: 'string',
-            title: 'DOI',
-            description: 'Digital Object Identifier (falls vorhanden)'
-          },
-  
-          // Summaries / Arrays
-          platform_summary: {
-            type: 'array',
-            items: { type: 'string' },
-            title: 'Plattformen',
-            description: 'Satelliten/Plattformen (z.B. Sentinel-2, Landsat-8)'
-          },
-          constellation_summary: {
-            type: 'array',
-            items: { type: 'string' },
-            title: 'Konstellationen',
-            description: 'Satelliten-Konstellationen (z.B. Sentinel, Landsat)'
-          },
-          gsd_summary: {
-            type: 'array',
-            items: { type: 'string' },
-            title: 'Ground Sampling Distance',
-            description: 'Bodenauflösung der Daten (z.B. 10m, 30m)'
-          },
-          processing_level_summary: {
-            type: 'array',
-            items: { type: 'string' },
-            title: 'Verarbeitungslevel',
-            description: 'Verarbeitungsstufe der Daten (z.B. L1C, L2A)'
-          },
-  
-          spatial_extent: {
+        res.type('application/schema+json');
+
+        const baseUrl = `${req.protocol}://${req.get('host')}`;
+        const pathNoQuery = req.originalUrl.split('?')[0];
+        const schemaId = `${baseUrl}${pathNoQuery}`;
+
+        // Get all data to fill enums
+        const platformResult = await db.query('SELECT DISTINCT UNNEST(platform_summary) AS platform FROM test.collections WHERE platform_summary IS NOT NULL ORDER BY platform');
+        const platformEnum = platformResult.rows.map(row => row.platform).filter(Boolean);
+
+        const processingLevelResult = await db.query('SELECT DISTINCT UNNEST(processing_level_summary) AS processing_level FROM test.collections WHERE processing_level_summary IS NOT NULL ORDER BY processing_level');
+        const processingLevelEnum = processingLevelResult.rows.map(row => row.processing_level).filter(Boolean);
+        
+        const constellationResult = await db.query('SELECT DISTINCT UNNEST(constellation_summary) AS constellation FROM test.collections WHERE constellation_summary IS NOT NULL ORDER BY constellation');
+        const constellationEnum = constellationResult.rows.map(row => row.constellation).filter(Boolean);
+
+        const gsdResult = await db.query('SELECT DISTINCT jsonb_array_elements_text(gsd_summary) AS gsd FROM test.collections WHERE gsd_summary IS NOT NULL');
+        const gsdEnum = gsdResult.rows
+            .map(row => Number(row.gsd))
+            .filter(val => !isNaN(val))
+            .sort((a, b) => a - b);
+
+        const providerResult = await db.query(`SELECT DISTINCT provider->>'name' AS provider FROM test.collections, LATERAL jsonb_array_elements(providers) AS provider WHERE providers IS NOT NULL ORDER BY provider`);
+        const providerEnum = providerResult.rows.map(row => row.provider).filter(Boolean);
+
+
+        const queryables = {
+            $schema: 'https://json-schema.org/draft/2020-12/schema',
+            $id: schemaId,
+
+            title: 'Collections Queryables',
+            description:
+                'JSON Schema describing the properties that can be used in filter expressions for /collections.',
+
             type: 'object',
-            title: 'Räumliche Ausdehnung',
-            description: 'Geometrie/Bounding Box für räumliche Filterung (GeoJSON Polygon)',
+            additionalProperties: false,
+
             properties: {
-              type: { type: 'string' },
-              coordinates: { type: 'array' }
+                title: {
+                    type: 'string',
+                    title: 'Title',
+                    description: 'Collection title'
+                },
+                description: {
+                    type: 'string',
+                    title: 'Description',
+                    description: 'Collection description'
+                },
+                license: {
+                    type: 'string',
+                    title: 'License',
+                    description: 'License string (e.g. CC-BY-4.0)'
+                },
+                doi: {
+                    type: 'string',
+                    title: 'DOI',
+                    description: 'Digital Object Identifier'
+                },
+                temporal_start: {
+                    type: 'string',
+                    format: 'date-time',
+                    title: 'Temporal start',
+                    description: 'Start of the temporal extent'
+                },
+                temporal_end: {
+                    type: 'string',
+                    format: 'date-time',
+                    title: 'Temporal end',
+                    description: 'End of the temporal extent (may be null/open-ended)'
+                },
+                spatial_extent: {
+                    title: 'Spatial extent',
+                    description: 'Geometry used for spatial filtering',
+                    'x-ogc-role': 'primary-geometry',
+                    format: 'geometry-any'
+                },
+                platform: {
+                    description: "{eo:platform}",
+                    title: "Platform",
+                    type: "string",
+                    enum: platformEnum
+                },
+                processingLevel: {
+                    description: "{eo:processingLevel}",
+                    title: "Processing level",
+                    type: "string",
+                    enum: processingLevelEnum
+                },
+                constellation: {
+                    description: "{eo:constellation}",
+                    title: "Constellation",
+                    type: "string",
+                    enum: constellationEnum
+                },
+                gsd: {
+                    description: "{eo:gsd}",
+                    title: "GSD",
+                    type: "number",
+                    enum: gsdEnum
+                },
+                provider: {
+                    description: '{eo:providerName}',
+                    type: 'string',
+                    title: 'Provider',
+                    enum: providerEnum
+                },
             }
-          },
-  
-          temporal_extent: {
-            type: 'array',
-            items: { type: 'string', format: 'date-time' },
-            minItems: 2,
-            maxItems: 2,
-            title: 'Zeitliche Ausdehnung',
-            description: 'Zeitraum der Daten [Start, Ende] für zeitliche Filterung'
-          }
-        }
-      };
-  
-      res.json(queryables);
+        };
+
+        return res.json(queryables);
     } catch (err) {
-      console.error('Error fetching queryables: ', err);
-      res.status(500).json({ error: 'Internal server error' });
+        console.error('Error fetching queryables: ', err);
+        return res.status(500).json({ error: 'Internal server error' });
     }
-  };
-  
-  module.exports = { getQueryables };
-  
+};
+
+module.exports = { getQueryables };
+
