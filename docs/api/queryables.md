@@ -92,12 +92,12 @@ Use the `datetime` parameter (corresponds to `temporal_start` and `temporal_end`
 
 The fields `platform`, `processingLevel`, `gsd`, and `provider` have their possible values (enums) dynamically derived from the current database content. This ensures that filter options always reflect the available data. The API response and JSON Schema are updated accordingly.
 
-## STAC Conformance
+## OGC Conformance
 
-This endpoint follows the STAC API Filter Extension specification:
+This endpoint is designed to be compliant with OGC API standards for feature filtering and queryable properties:
 
-- Returns a Queryables object with `type: "Queryables"`
+- Returns a Queryables object with `type: "object"`
 - Provides JSON Schema definitions for all filterable properties
-- Includes dynamic enum values for relevant fields
+- Includes dynamic enum values for relevant fields (sourced from the database)
 - Describes both simple (string, number) and complex (object, geometry) properties
 - Enables discovery of all available filter fields before querying
