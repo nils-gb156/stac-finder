@@ -20,11 +20,6 @@ const getQueryables = async (req, res) => {
       additionalProperties: false,
 
       properties: {
-        id: {
-          type: 'string',
-          title: 'ID',
-          description: 'Collection identifier'
-        },
         title: {
           type: 'string',
           title: 'Title',
