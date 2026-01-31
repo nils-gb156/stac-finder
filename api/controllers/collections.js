@@ -40,11 +40,13 @@ const getCollections = async (req, res) => {
 
     // --- CQL2 filter (filter=...) ---
     const { whereClause: cqlWhere, error: cqlError } = parseCql2Filter(
-      req.query.filter,
-      req.query['filter-lang'],
-      queryParams
-    );
+  req.query.filter,
+  req.query['filter-lang'],
+  queryParams,
+  queryableMap
+);
 
+    
     if (cqlError) {
       return res.status(cqlError.status).json({ error: cqlError.error, message: cqlError.message });
     }
