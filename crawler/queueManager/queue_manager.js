@@ -48,10 +48,10 @@ export function saveInBackup() {
         fs.writeFileSync(backupFilePath, JSON.stringify(urlData))
         
         logger.info("The crawling process has been stopped. The data that had not yet been uploaded to the database has been saved in a backup file.")
+    
+    } else {
+        logger.info("The crawling process has been stopped. There is no temporary data to store in a backup file.")
     }
-
-    logger.info("The crawling process has been stopped. There is no temporary data to store in a backup file.")
-
 }
 
 /**
@@ -104,25 +104,6 @@ export async function removeFromQueue(url){
     } catch(err) {
         //log error
         logger.warn(`Did not deleted the data from the queue because of the following error: ${err}`)
-    }
-}
-
-/**
- * Clears the current queue (e.g. at start of crawler run).
- * @function clearQueue
- */
-export async function clearQueue() {
-    
-    try {
-        //delete data
-        await query(`
-            DELETE FROM stac."urlQueue"`)
-
-        //log deleted Data
-        logger.info(`cleared queue`)
-    } catch(err) {
-        //log error
-        logger.warn(`Did not cleared the queue because of the following error: ${err}`)
     }
 }
 

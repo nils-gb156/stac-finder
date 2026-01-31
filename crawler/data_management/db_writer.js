@@ -148,6 +148,6 @@ export async function upsertCollection(data) {
   ];
 
   await pool.query(query, values);
-  console.log(`DB: Collection '${data.id}' upserted successfully`);
+  logger.info(`DB: Collection '${data.id}' upserted successfully`);
   return true;
 }
