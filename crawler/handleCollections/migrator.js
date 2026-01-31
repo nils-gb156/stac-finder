@@ -19,7 +19,7 @@ export async function normalizeCollection(rawData, sourceUrl) {
         // reading version from the migrated object
         const version = migratedCollection.stac_version;
 
-        console.log(`[INFO] Migration succesful for ${sourceUrl}. Version: ${version}`);
+        logger.info(`Migration succesful for ${sourceUrl}. Version: ${version}`);
 
         return {
             collection: migratedCollection,
@@ -27,7 +27,7 @@ export async function normalizeCollection(rawData, sourceUrl) {
         };
 
     } catch (error) {
-        console.error(`[ERROR] Error  ${sourceUrl}:`, error.message);
+        logger.error(`Error  ${sourceUrl}:`, error.message);
         throw error;
     }
 }

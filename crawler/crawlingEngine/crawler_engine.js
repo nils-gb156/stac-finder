@@ -215,8 +215,6 @@ export async function startCrawler() {
             logger.error(`There are ${urlData.titles.length} titles but ${urlData.urls.length} urls and 
                 ${urlData.parentUrls.length} parent urls you want to add to the queue.`)
         }
-        
-        console.log(urlData.urls.length)
 
         if (urlData.urls.length >= 1000 || !await hasNextUrl()) {
 
