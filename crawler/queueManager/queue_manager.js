@@ -48,10 +48,10 @@ export function saveInBackup() {
         fs.writeFileSync(backupFilePath, JSON.stringify(urlData))
         
         logger.info("The crawling process has been stopped. The data that had not yet been uploaded to the database has been saved in a backup file.")
+    
+    } else {
+        logger.info("The crawling process has been stopped. There is no temporary data to store in a backup file.")
     }
-
-    logger.info("The crawling process has been stopped. There is no temporary data to store in a backup file.")
-
 }
 
 /**
