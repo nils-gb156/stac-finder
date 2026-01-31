@@ -16,4 +16,4 @@ COPY . .
 
 # Start the crawler
 WORKDIR /app/crawler
-CMD ["node", "entrypoint.js"]
+CMD ["node", "STACFinderCrawler.js"]

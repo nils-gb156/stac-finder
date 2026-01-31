@@ -63,6 +63,34 @@ export async function markSourceCrawled(id) {
 }
 
 /**
+ * Load sources that should be crawled based on the crawl interval.
+ * Sources are included if they have never been crawled or were last crawled
+ * more than the specified interval ago.
+ *
+ * @function loadSourcesForCrawling
+ * @param {number} intervalDays - The minimum days since last crawl (default: 7)
+ * @returns {Promise<Array<Object>>} Sources that need crawling.
+ */
+export async function loadSourcesForCrawling(intervalDays = 7) {
+  const sources = await loadValidSources()
+  const now = new Date()
+  const intervalMs = intervalDays * 24 * 60 * 60 * 1000
+
+  return sources.filter(src => {
+    // If never crawled, include the source
+    if (!src.last_crawled_timestamp) {
+      return true
+    }
+
+    // Check if last crawl was older than the interval
+    const lastCrawled = new Date(src.last_crawled_timestamp)
+    const timeSinceLastCrawl = now - lastCrawled
+
+    return timeSinceLastCrawl > intervalMs
+  })
+}
+
+/**
  * Load sources that have never been crawled.
  *
  * @function loadUncrawledSources
