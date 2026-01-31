@@ -183,10 +183,9 @@ export async function startCrawler() {
 
             //validate the stac Object
             let valid = validateStacObject(STACObject).valid
-            let notIgnored = !validateStacObject(STACObject).isIgnored
             
             // Only proceed if valid JSON was retrieved
-            if (valid && notIgnored) {
+            if (valid) {
 
                 //for Catalogs: get the child data and save the catalog data in the sources db
                 //for Collections: get the child data, save the collection data in the collections and the sources db
@@ -216,7 +215,7 @@ export async function startCrawler() {
             logger.error(`There are ${urlData.titles.length} titles but ${urlData.urls.length} urls and 
                 ${urlData.parentUrls.length} parent urls you want to add to the queue.`)
         }
-        
+
         if (urlData.urls.length >= 1000 || !await hasNextUrl()) {
 
             //add the data to the queue
