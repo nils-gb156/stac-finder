@@ -1,4 +1,6 @@
 import { pool } from './db_client.js'; 
+import chalk from "chalk"
+import { logger } from '../logging/logger.js';
 
 // Convert any value to PostgreSQL TEXT[] array, handling nulls and type conversion
 const toTextArray = (v) =>
@@ -152,6 +154,6 @@ export async function upsertCollection(data) {
   ];
 
   await pool.query(query, values);
-  logger.info(`DB: Collection '${data.id}' upserted successfully`);
+  logger.info(chalk.cyan(`DB: Collection '${data.id}' upserted successfully`));
   return true;
 }
