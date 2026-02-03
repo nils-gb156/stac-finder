@@ -5,7 +5,7 @@
  * @param {number} maxLimit - Maximum allowed limit value
  * @returns {Object} { limit: number, offset: number, error: Object|null }
  */
-const parsePaginationParams = (query, defaultLimit = 10, maxLimit = 10000) => {
+const parsePaginationParams = (query, defaultLimit = 9, maxLimit = 10000) => {
     const token = query.token;
     
     // Parse limit - only use default if not provided at all
@@ -88,14 +88,40 @@ const buildQueryString = (params) => {
  * @param {boolean} hasMoreResults - Whether there are more results available (determined by LIMIT+1 check)
  * @returns {Array} Array of link objects
  */
-const createPaginationLinks = (baseUrl, query, offset, limit, resultCount, hasMoreResults = null) => {
+const createPaginationLinks = (baseUrl, query, offset, limit, resultCount, hasMoreResults = null, numberMatched = null) => {
     const links = [
         {
             rel: 'self',
             href: `${baseUrl}${buildQueryString(query)}`,
-            type: 'application/json'
+            type: 'application/json',
+            title: 'This page'
         }
     ];
+
+    // Add 'first' link (always points to the first page, i.e., no token)
+    const firstQuery = { ...query };
+    delete firstQuery.token;
+    firstQuery.limit = limit;
+    links.push({
+        rel: 'first',
+        href: `${baseUrl}${buildQueryString(firstQuery)}`,
+        type: 'application/json',
+        title: 'First page'
+    });
+
+    // Add 'last' link if numberMatched is available and > 0
+    if (typeof numberMatched === 'number' && numberMatched > 0) {
+        // Calculate last page offset (zero-based, so subtract 1)
+        const lastPageOffset = Math.floor((numberMatched - 1) / limit) * limit;
+        const lastToken = createPaginationToken(lastPageOffset);
+        const lastQuery = { ...query, token: lastToken, limit };
+        links.push({
+            rel: 'last',
+            href: `${baseUrl}${buildQueryString(lastQuery)}`,
+            type: 'application/json',
+            title: 'Last page'
+        });
+    }
 
     // Determine if there are more results
     const shouldShowNext = hasMoreResults !== null 
@@ -110,7 +136,8 @@ const createPaginationLinks = (baseUrl, query, offset, limit, resultCount, hasMo
         links.push({
             rel: 'next',
             href: `${baseUrl}${buildQueryString(nextQuery)}`,
-            type: 'application/json'
+            type: 'application/json',
+            title: 'Next page'
         });
     }
 
@@ -122,7 +149,8 @@ const createPaginationLinks = (baseUrl, query, offset, limit, resultCount, hasMo
         links.push({
             rel: 'prev',
             href: `${baseUrl}${buildQueryString(prevQuery)}`,
-            type: 'application/json'
+            type: 'application/json',
+            title: 'Prev page'
         });
     }
 

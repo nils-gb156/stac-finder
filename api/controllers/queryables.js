@@ -1,85 +1,132 @@
-const path = require('path');
 
-const getQueryables = async (req, res) => {
+const db = require('../db');
+const path = require('path');
+const { logger } = require('../middleware/logger');
+
+const getQueryables = async (req, res, next) => {
     try {
+        res.type('application/schema+json');
+
+        const baseUrl = `${req.protocol}://${req.get('host')}`;
+        const pathNoQuery = req.originalUrl.split('?')[0];
+        const schemaId = `${baseUrl}${pathNoQuery}`;
+
+        // Get all data to fill enums
+        const licenseResult = await db.query('SELECT DISTINCT license FROM stac.collections WHERE license IS NOT NULL ORDER BY license');
+        const licenseEnum = licenseResult.rows.map(row => row.license).filter(Boolean);
+
+        const platformResult = await db.query('SELECT DISTINCT UNNEST(platform_summary) AS platform FROM stac.collections WHERE platform_summary IS NOT NULL ORDER BY platform');
+        const platformEnum = platformResult.rows.map(row => row.platform).filter(Boolean);
+
+        const processingLevelResult = await db.query('SELECT DISTINCT UNNEST(processing_level_summary) AS processing_level FROM stac.collections WHERE processing_level_summary IS NOT NULL ORDER BY processing_level');
+        const processingLevelEnum = processingLevelResult.rows.map(row => row.processing_level).filter(Boolean);
         
+        const constellationResult = await db.query('SELECT DISTINCT UNNEST(constellation_summary) AS constellation FROM stac.collections WHERE constellation_summary IS NOT NULL ORDER BY constellation');
+        const constellationEnum = constellationResult.rows.map(row => row.constellation).filter(Boolean);
+
+        const providerResult = await db.query(`SELECT DISTINCT provider->>'name' AS provider FROM stac.collections, LATERAL jsonb_array_elements(providers) AS provider WHERE providers IS NOT NULL ORDER BY provider`);
+        const providerEnum = providerResult.rows.map(row => row.provider).filter(Boolean);
+
         const queryables = {
-            type: 'Queryables',
-            title: 'Filterbare Felder für STAC-Collections',
+            $schema: 'https://json-schema.org/draft/2020-12/schema',
+            $id: schemaId,
+
+            title: 'Collections Queryables',
             description:
-                'Diese Ressource beschreibt alle Felder, nach denen in /collections gefiltert werden kann.',
+                'JSON Schema describing the properties that can be used in filter expressions for /collections.',
+
+            type: 'object',
+            additionalProperties: false,
+
             properties: {
                 title: {
                     type: 'string',
-                    title: 'Titel',
-                    description: 'Titel der Collection für Freitextsuche'
+                    title: 'Title',
+                    description: 'Collection title'
                 },
                 description: {
                     type: 'string',
-                    title: 'Beschreibung',
-                    description: 'Beschreibung der Collection für Freitextsuche'
-                },
-                keywords: {
-                    type: 'array',
-                    items: { type: 'string' },
-                    title: 'Schlagworte',
-                    description: 'Keywords zur thematischen Filterung'
+                    title: 'Description',
+                    description: 'Collection description'
                 },
                 license: {
                     type: 'string',
-                    title: 'Lizenz',
-                    description: 'Lizenz der Daten (z.B. CC-BY-4.0, proprietary)'
+                    title: 'License',
+                    description: 'License string (e.g. CC-BY-4.0)',
+                    enum: licenseEnum,
+                    'x-ogc-queryable-operators': ['eq', 'neq']
                 },
-                platform_summary: {
-                    type: 'array',
-                    items: { type: 'string' },
-                    title: 'Plattformen',
-                    description: 'Satelliten/Plattformen (z.B. Sentinel-2, Landsat-8)'
+                doi: {
+                    type: 'string',
+                    title: 'DOI',
+                    description: 'Digital Object Identifier'
                 },
-                constellation_summary: {
-                    type: 'array',
-                    items: { type: 'string' },
-                    title: 'Konstellationen',
-                    description: 'Satelliten-Konstellationen (z.B. Sentinel, Landsat)'
+                temporal_start: {
+                    type: 'string',
+                    format: 'date-time',
+                    title: 'Temporal start',
+                    description: 'Start of the temporal extent'
                 },
-                gsd_summary: {
-                    type: 'array',
-                    items: { type: 'string' },
-                    title: 'Ground Sampling Distance',
-                    description: 'Bodenauflösung der Daten (z.B. 10m, 30m)'
-                },
-                processing_level_summary: {
-                    type: 'array',
-                    items: { type: 'string' },
-                    title: 'Verarbeitungslevel',
-                    description: 'Verarbeitungsstufe der Daten (z.B. L1C, L2A)'
+                temporal_end: {
+                    type: 'string',
+                    format: 'date-time',
+                    title: 'Temporal end',
+                    description: 'End of the temporal extent (may be null/open-ended)'
                 },
                 spatial_extent: {
-                    type: 'object',
-                    title: 'Räumliche Ausdehnung',
-                    description: 'Geografische Bounding Box für räumliche Filterung (GeoJSON Polygon)',
-                    properties: {
-                        type: { type: 'string' },
-                        coordinates: { type: 'array' }
-                    }
+                    title: 'Spatial extent',
+                    description: 'Geometry used for spatial filtering',
+                    'x-ogc-role': 'primary-geometry',
+                    format: 'geometry-any'
                 },
-                temporal_extent: {
-                    type: 'array',
-                    items: { type: 'string', format: 'date-time' },
-                    minItems: 2,
-                    maxItems: 2,
-                    title: 'Zeitliche Ausdehnung',
-                    description: 'Zeitraum der Daten [Start, Ende] für zeitliche Filterung'
+                platform: {
+                    description: "Unique name of the specific platform to which the instrument is attached",
+                    title: "Platform",
+                    type: "string",
+                    enum: platformEnum,
+                    'x-ogc-queryable-operators': ['eq', 'neq']
+                },
+                processingLevel: {
+                    description: "Processing level of the data (e.g., L1, L2, L3)",
+                    title: "Processing level",
+                    type: "string",
+                    enum: processingLevelEnum,
+                    'x-ogc-queryable-operators': ['eq', 'neq']
+                },
+                constellation: {
+                    description: "Name of the constellation to which the platform belongs",
+                    title: "Constellation",
+                    type: "string",
+                    enum: constellationEnum,
+                    'x-ogc-queryable-operators': ['eq', 'neq']
+                },
+                gsd: {
+                    description: "Ground Sample Distance in meters",
+                    title: "GSD",
+                    type: "number",
+                    'x-ogc-queryable-operators': ['eq', 'neq', 'lt', 'lte', 'gt', 'gte']
+                },
+                provider: {
+                    description: 'Name of the organization or individual that provides the data',
+                    type: 'string',
+                    title: 'Provider',
+                    enum: providerEnum,
+                    'x-ogc-queryable-operators': ['eq', 'neq']
+                },
+                keywords: {
+                    description: 'Keywords or tags describing the collection',
+                    type: 'string',
+                    title: 'Keyword'
                 }
             }
         };
 
-        res.json(queryables);
-        
+        return res.json(queryables);
     } catch (err) {
-        console.error('Error fetching queryables: ', err);
-        res.status(500).json({ error: 'Internal server error' });
+        logger.error('Error fetching queryables', { error: err.message, stack: err.stack });
+        return next(err);
     }
 };
 
 module.exports = { getQueryables };
+

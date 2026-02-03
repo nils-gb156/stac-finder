@@ -1,4 +1,7 @@
 // utils/filtering.js
+const { parseCql2 } = require('./cql2parser');
+const { astToSql } = require('./cql2sql');
+const queryableMap = require('./queryableMap');
 /**
  * Parse text search query parameter
  * @param {string} q - Search query string
@@ -321,31 +324,151 @@ const parseDatetimeFilter = (datetime) => {
     }
 };
 
-const parseCql2Filter = (filter, filterLang) => {
-    // TODO: Implement CQL2 filtering using queryBuilder.js
-    // Validate filter-lang parameter (cql2-text, cql2-json)
-    // Return parsed filter for queryBuilder
-    if (!filter) {
-        return { whereClause: null, params: [], error: null };
+const looksLikeJson = (s) => typeof s === 'string' && /^[\s]*[{[]/.test(s);
+
+const cql2JsonToAst = (node) => {
+  // literals
+  if (node === null || typeof node === 'string' || typeof node === 'number') {
+    return { type: 'Literal', value: node };
+  }
+
+  // BBox geometry: { type: "BBox", value: [...] }
+  if (node && typeof node === 'object' && node.type === 'BBox' && Array.isArray(node.value)) {
+    return { type: 'Literal', value: node };
+  }
+
+  // property reference: { property: "title" }
+  if (node && typeof node === 'object' && !Array.isArray(node) && node.property) {
+    return { type: 'Identifier', name: node.property };
+  }
+
+  // operation node: { op: "...", args: [...] }
+  if (node && typeof node === 'object' && node.op) {
+    const op = String(node.op).toUpperCase();
+    const args = node.args || [];
+
+    // NOT
+    if (op === 'NOT') {
+      if (args.length !== 1) throw new Error('NOT requires 1 arg');
+      return { type: 'Not', expr: cql2JsonToAst(args[0]) };
     }
-    
-    // Validate filter-lang
+
+    // AND/OR (CQL2 JSON is usually n-ary; our AST is binary → fold it)
+    if (op === 'AND' || op === 'OR') {
+      if (args.length < 2) throw new Error(`${op} requires at least 2 args`);
+      return args.slice(1).reduce((left, right) => {
+        return { type: 'Logical', op, left, right: cql2JsonToAst(right) };
+      }, cql2JsonToAst(args[0]));
+    }
+
+    // BETWEEN: args: [ {property}, low, high ]
+    if (op === 'BETWEEN') {
+      if (args.length !== 3) throw new Error('BETWEEN requires 3 args');
+      return {
+        type: 'Between',
+        left: cql2JsonToAst(args[0]),
+        low: cql2JsonToAst(args[1]),
+        high: cql2JsonToAst(args[2]),
+      };
+    }
+
+    // IN: args commonly [ {property}, [v1,v2,...] ]  (sometimes list is directly multiple args)
+    if (op === 'IN') {
+      if (args.length < 2) throw new Error('IN requires args');
+      const left = cql2JsonToAst(args[0]);
+      const list = Array.isArray(args[1]) ? args[1] : args.slice(1);
+      return {
+        type: 'In',
+        left,
+        values: list.map(v => cql2JsonToAst(v)),
+      };
+    }
+
+    // LIKE and comparisons: args: [ {property}, literal ]
+    const compareOps = ['=', '!=', '<>', '<', '>', 'LIKE'];
+    if (compareOps.includes(op)) {
+      if (args.length !== 2) throw new Error(`${op} requires 2 args`);
+      return {
+        type: 'Compare',
+        op,
+        left: cql2JsonToAst(args[0]),
+        right: cql2JsonToAst(args[1]),
+      };
+    }
+
+    // Spatial operators: s_intersects, s_contains, s_overlaps, s_within
+    const spatialOps = ['S_INTERSECTS', 'S_CONTAINS', 'S_OVERLAPS', 'S_WITHIN'];
+    if (spatialOps.includes(op)) {
+      if (args.length !== 2) throw new Error(`${op} requires 2 args`);
+      return {
+        type: 'Spatial',
+        op,
+        left: cql2JsonToAst(args[0]),
+        right: cql2JsonToAst(args[1]),
+      };
+    }
+
+    throw new Error(`Unsupported CQL2 JSON op: ${node.op}`);
+  }
+
+  throw new Error('Invalid CQL2 JSON filter');
+};
+
+const parseCql2Filter = (filter, filterLang, queryParams) => {
+    if (!filter) {
+      return { whereClause: null, params: [], error: null };
+    }
+  
     const validLangs = ['cql2-text', 'cql2-json'];
-    if (filterLang && !validLangs.includes(filterLang)) {
-        return {
+    let lang = filterLang;
+  
+    // default if not provided
+    if (!lang) {
+      lang = looksLikeJson(filter) ? 'cql2-json' : 'cql2-text';
+    }
+  
+    if (!validLangs.includes(lang)) {
+      return {
+        whereClause: null,
+        params: [],
+        error: {
+          status: 400,
+          error: 'Invalid filter-lang',
+          message: `filter-lang must be one of: ${validLangs.join(', ')}`
+        }
+      };
+    }
+  
+    try {
+      let ast;
+  
+      if (lang === 'cql2-text') {
+        if (typeof filter !== 'string') {
+          return {
             whereClause: null,
             params: [],
-            error: {
-                status: 400,
-                error: 'Invalid filter-lang',
-                message: `filter-lang must be one of: ${validLangs.join(', ')}`
-            }
-        };
+            error: { status: 400, error: 'Invalid CQL2 filter', message: 'filter must be a string for cql2-text' }
+          };
+        }
+        ast = parseCql2(filter);
+      } else {
+        // cql2-json (in query string typically arrives as JSON string)
+        const obj = typeof filter === 'string' ? JSON.parse(filter) : filter;
+        ast = cql2JsonToAst(obj);
+      }
+  
+      // IMPORTANT: use the shared queryParams so placeholders match
+      const whereClause = astToSql(ast, queryableMap, queryParams);
+      return { whereClause, params: [], error: null };
+  
+    } catch (e) {
+      return {
+        whereClause: null,
+        params: [],
+        error: { status: 400, error: 'Invalid CQL2 filter', message: e.message }
+      };
     }
-    
-    // TODO: Call queryBuilder.cql2ToSql(filter, filterLang)
-    return { whereClause: null, params: [], error: null };
-};
+  };
 
 module.exports = {
     parseTextSearch,

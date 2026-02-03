@@ -4,7 +4,7 @@ describe('Pagination Utils', () => {
   describe('parsePaginationParams', () => {
     test('should use default limit when not provided', () => {
       const result = parsePaginationParams({});
-      expect(result.limit).toBe(10);
+      expect(result.limit).toBe(9);
       expect(result.offset).toBe(0);
     });
 
@@ -31,6 +31,28 @@ describe('Pagination Utils', () => {
   });
 
   describe('createPaginationLinks', () => {
+        test('should always include first link', () => {
+          const links = createPaginationLinks('/collections', {}, 20, 10, 10, true);
+          const firstLink = links.find(l => l.rel === 'first');
+          expect(firstLink).toBeDefined();
+          expect(firstLink.href).toContain('/collections');
+          expect(firstLink.href).not.toContain('token=');
+        });
+
+        test('should include last link if numberMatched is set', () => {
+          const links = createPaginationLinks(
+            '/collections',
+            {},
+            10,
+            10,
+            10,
+            true,
+            35
+          );
+          const lastLink = links.find(l => l.rel === 'last');
+          expect(lastLink).toBeDefined();
+          expect(lastLink.href).toContain('token=');
+        });
     test('should create next link when full page', () => {
       const links = createPaginationLinks('/collections', {}, 0, 10, 10);
       const nextLink = links.find(l => l.rel === 'next');

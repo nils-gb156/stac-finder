@@ -1,4 +1,7 @@
-import { pool } from '../crawling/src/data/db_client.js'; 
+import { pool } from './db_client.js'; 
+import { logger } from '../logging/logger.js';
+import chalk from "chalk";
+chalk.level = 3;
 
 // Convert any value to PostgreSQL TEXT[] array, handling nulls and type conversion
 const toTextArray = (v) =>
@@ -20,6 +23,7 @@ const safeJSON = (v, fallback) => {
  * @returns {Promise<number>} Internal source ID for FK references
  */
 export async function upsertSource(source) {
+  //insert the data into the sources db
   const query = `
     INSERT INTO stac.sources (url, title, type, last_crawled_timestamp)
     VALUES ($1, $2, $3, NOW())
@@ -32,6 +36,8 @@ export async function upsertSource(source) {
   `;
   const values = [source.url, source.title, source.type];
   const res = await pool.query(query, values);
+
+  //return the number of inserted rows
   return res.rows[0].id;
 }
 
@@ -80,19 +86,21 @@ export async function upsertCollection(data) {
   const platform = toTextArray(data.platform);
   const constellation = toTextArray(data.constellation);
   const processing_level = toTextArray(data.processing_level);
+  const instrument = toTextArray(data.instrument);
 
   // Prepare JSONB columns: parse JSON strings and validate structure
   const providers = safeJSON(data.providers, []);
   const gsd = safeJSON(data.gsd, null);
   const raw_json = safeJSON(data.raw_json, {});
+  const stac_extensions = toTextArray(data.stac_extensions);
 
   const query = `
     INSERT INTO stac.collections (
       id, source_id, title, description, keywords, license,
       providers, doi, platform_summary, constellation_summary,
-      gsd_summary, processing_level_summary,
+      gsd_summary, processing_level_summary, instrument_summary,
       spatial_extent, temporal_start, temporal_end,
-      last_crawled_timestamp, raw_json
+      last_crawled_timestamp, raw_json, stac_extensions
     )
     VALUES (
       $1, $2, $3, $4, $5, $6,
@@ -100,10 +108,12 @@ export async function upsertCollection(data) {
       $8, $9, $10,
       $11::jsonb,
       $12,
+      $21,
       ST_MakeEnvelope($13, $14, $15, $16, 4326),
       $17, $18,
       NOW(),
-      $19::jsonb
+      $19::jsonb,
+      $20
     )
     ON CONFLICT (id) DO UPDATE SET
       source_id = EXCLUDED.source_id,
@@ -121,7 +131,9 @@ export async function upsertCollection(data) {
       temporal_start = EXCLUDED.temporal_start,
       temporal_end = EXCLUDED.temporal_end,
       last_crawled_timestamp = NOW(),
-      raw_json = EXCLUDED.raw_json;
+      raw_json = EXCLUDED.raw_json,
+      stac_extensions = EXCLUDED.stac_extensions,
+      instrument_summary = EXCLUDED.instrument_summary;
   `;
 
   const values = [
@@ -141,9 +153,11 @@ export async function upsertCollection(data) {
     data.temporal_start ?? null,
     data.temporal_end ?? null,
     JSON.stringify(raw_json),
+    stac_extensions,
+    instrument
   ];
 
   await pool.query(query, values);
-  console.log(`DB: Collection '${data.id}' upserted successfully`);
+  logger.info(chalk.cyan(`DB: Collection '${data.id}' upserted successfully`));
   return true;
 }

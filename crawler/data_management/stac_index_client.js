@@ -1,6 +1,8 @@
 //imports
-import { query } from "../crawling/src/data/db_client.js"
-import { logger } from "../crawling/src/config/logger.js"
+import { query } from "./db_client.js"
+import { logger } from "../logging/logger.js"
+import chalk from "chalk";
+chalk.level = 3;
 
 /**
  * @function getSTACIndexData
@@ -14,7 +16,8 @@ export async function getSTACIndexData() {
         const result = await query(`
             SELECT 
                 url,
-                title
+                title,
+                is_api
             FROM stac.catalogs
         `)
 
@@ -26,12 +29,12 @@ export async function getSTACIndexData() {
             data.push(row)
         }
 
-        logger.info(`Loaded ${result.rows.length} URLs from the stac index database.`)
+        logger.info(chalk.cyan(`Loaded ${result.rows.length} URLs from the stac index database.`))
 
         return data
 
     } catch (error) {
-        logger.error("Error loading URLs from the stac index database: " + error.message)
+        logger.error(chalk.red("Error loading URLs from the stac index database: " + error.message))
         throw error
     }
 }
